@@ -61,7 +61,7 @@ def main():
             display_menu()
             choice = input("Enter your choice (1-4): ").strip()
             handle_choice(choice)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
         print("\nExiting...")
         sys.exit(0)
 
