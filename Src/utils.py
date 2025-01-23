@@ -1,8 +1,8 @@
 from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
 
 def format_time(seconds):
-    hours, seconds = divmod(seconds, 3600)
-    minutes, seconds = divmod(seconds, 60)
+    hours, remaining_seconds = divmod(seconds, 3600)
+    minutes, remaining_seconds = divmod(remaining_seconds, 60)
 
     if hours > 0:
         return f"{hours}h {minutes}m {seconds:.3f}s"
