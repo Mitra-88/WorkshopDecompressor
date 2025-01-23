@@ -1,6 +1,6 @@
 from time import time
 from uuid import uuid4
-from shutil import move
+from shutil import move, Error as ShutilError
 from zipfile import ZipFile
 from rarfile import RarFile
 from py7zr import SevenZipFile
@@ -41,8 +41,12 @@ def extract_archive(archive_path, archive_count):
         if extension in archive_count:
             archive_count[extension] += 1
 
+    except (FileNotFoundError, PermissionError) as e:
+        print(f"File error processing {archive_path}: {e}")
+    except ShutilError as e:
+        print(f"Shutil error processing {archive_path}: {e}")
     except Exception as e:
-        print(f"Error processing {archive_path}: {e}")
+        print(f"Unexpected error processing {archive_path}: {e}")
 
 def process_archives():
     excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
