@@ -1,6 +1,6 @@
 from time import time
 from uuid import uuid4
-from shutil import move
+from shutil import move, Error as ShutilError
 from platform import system
 from subprocess import run, DEVNULL
 from multiprocessing import cpu_count
@@ -66,12 +66,19 @@ def extract_gma_file(gma_file, fastgmad_path, addon_formats_count):
     addon_formats_count[".gma"] += 1
 
 def move_files_to_leftover(files, leftover_dir):
-    makedirs(leftover_dir, exist_ok=True)
-    for file in files:
-        destination = path.join(leftover_dir, path.basename(file))
-        if path.exists(destination):
-            destination = generate_unique_name(destination)
-        move(file, destination)
+    try:
+        makedirs(leftover_dir, exist_ok=True)
+        for file in files:
+            destination = path.join(leftover_dir, path.basename(file))
+            if path.exists(destination):
+                destination = generate_unique_name(destination)
+            move(file, destination)
+    except (FileNotFoundError, PermissionError) as e:
+        print(f"File error moving files to {leftover_dir}: {e}")
+    except ShutilError as e:
+        print(f"Shutil error moving files to {leftover_dir}: {e}")
+    except Exception as e:
+        print(f"Unexpected error moving files to {leftover_dir}: {e}")
 
 def remove_empty_directories(start_dir):
     for entry in scandir(start_dir):

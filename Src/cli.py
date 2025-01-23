@@ -1,10 +1,10 @@
 import sys
-from platform import system, architecture, release, freedesktop_os_release
+from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
 from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
 
-version = f"v2.4.0 (2b2f2a3)"
-build_date = "2024-12-01 (Sunday, December 01, 2024)"
+version = f"v2.4.1 (f75f225)"
+build_date = "2025-01-23 (Thursday, January 23, 2025)"
 rarfile_version = "4.2"
 py7zr_version = "0.22.0"
 pyinstaller_version = "6.11.1"
@@ -14,7 +14,7 @@ def display_info():
     system_info = get_os_info()
     print(
         f"{'=' * 75}\n"
-        f"Vermeil's Addon Extractor {version}, {system_info} ({architecture()[0]}).\n"
+        f"Vermeil's Addon Extractor {version}, {system_info}.\n"
         f"Build Date: {build_date}.\n"
         f"Build Info: Pyinstaller {pyinstaller_version}, Py7zr {py7zr_version}, "
         f"RarFile {rarfile_version}, 7-zip {seven_zip_version}.\n"
@@ -52,26 +52,67 @@ def handle_choice(choice):
     else:
         print("Invalid choice. Please enter a number from 1 to 4.")
 
-def get_os_info():
+def normalize_architecture(arch: str) -> str:
+    arch_map = {
+        "x86_64": "64-Bit",
+        "64bit": "64-Bit",
+        "arm64": "ARM64",
+        "aarch64": "ARM64",
+    }
+    return arch_map.get(arch, arch)
+
+def get_windows_info() -> str:
     try:
-        os_name = system()
-
-        if os_name == "Linux":
-            try:
-                os_release_info = freedesktop_os_release()
-                pretty_name = os_release_info.get("PRETTY_NAME", "").strip()
-                version = os_release_info.get("VERSION", "").strip()
-                if pretty_name or version:
-                    return f"{pretty_name} {version}".strip()
-            except Exception:
-                pass
-
-            return f"{os_name} {release()}"
-
-        return f"{os_name} {release()}"
-
+        win_version, _, _, _ = win32_ver()
+        win_edition = win32_edition()
+        arch = normalize_architecture(architecture()[0])
+        return f"Windows {win_version} {win_edition} {arch}"
     except Exception as e:
-        return f"Unable to get OS information (っ °Д °;)っ"
+        return f"Windows (Error: {e})"
+
+def get_linux_info() -> str:
+    try:
+        distro_info = freedesktop_os_release()
+        pretty_name = distro_info.get("PRETTY_NAME", "Linux")
+        version = distro_info.get("VERSION", "")
+        version_id = distro_info.get("VERSION_ID", "")
+        arch = normalize_architecture(architecture()[0])
+
+        if pretty_name:
+            return f"{pretty_name} {arch}"
+        elif version:
+            return f"{version} {arch}"
+        else:
+            name = distro_info.get("NAME", "Linux")
+            if version_id:
+                return f"{name} {version_id} {arch}"
+            else:
+                return f"{name} {arch}"
+
+    except OSError:
+        return f"Linux {normalize_architecture(architecture()[0])}"
+    except Exception as e:
+        return f"Linux (Error: {e})"
+
+def get_macos_info() -> str:
+    try:
+        mac_version = mac_ver()[0]
+        arch = normalize_architecture(machine())
+        return f"macOS {mac_version} {arch}"
+    except Exception as e:
+        return f"macOS (Error: {e})"
+
+def get_os_info() -> str:
+    sys = system()
+
+    if sys == "Windows":
+        return get_windows_info()
+    elif sys == "Linux":
+        return get_linux_info()
+    elif sys == "Darwin":
+        return get_macos_info()
+    else:
+        return f"Unknown OS (System: {sys})"
 
 def main():
     try:

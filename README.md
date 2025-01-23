@@ -17,7 +17,7 @@
 |------------------|----------------------------------------------------------|--------------|
 | Windows          | 11, 10, 8.1, 8                                           | 64-bit       |
 | Linux            | Debian 12, Ubuntu 22.04, Fedora 41, Arch Linux, OpenSUSE | 64-bit       |
-| macOS            | macOS 15, 14, 13, 12, 11, 10.15                          | Arm64        |
+| macOS            | macOS 15, 14, 13, 12, 11, 10.15                          | ARM64        |
 
 - **RAM Usage:** 20MB
 - **Disk Space:** 25MB
