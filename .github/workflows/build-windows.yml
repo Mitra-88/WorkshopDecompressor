@@ -52,7 +52,7 @@ jobs:
           Remove-Item -Path 'dist\VAE\Bin\Darwin\7zz' -Force
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.6.0
         with:
           name: VAE-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-Windows-x64
           path: dist/VAE

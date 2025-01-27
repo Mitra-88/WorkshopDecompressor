@@ -36,8 +36,8 @@ To install VAE, download the [latest release](https://github.com/VermeilChan/VAE
 
 1. Extract the contents of VAE.
 2. Copy the extracted content to the directory where your addons are located. For example:
-   - **SteamCMD Path:** `path-to-steamcmd/steamapps/workshop/content/4000`
-   - **3rd Party Websites/Programs:** Place VAE in the directory containing your archives or folders. VAE will scan the current directory and any subdirectories.
+  - **SteamCMD Path:** `path-to-steamcmd/steamapps/workshop/content/4000`
+  - **3rd Party Websites/Programs:** Place VAE in the directory containing your archives or folders. VAE will scan the current directory and any subdirectories.
 
 ### Step 2: Run the Program
 
@@ -45,14 +45,13 @@ Upon launching the program, you will be presented with two options:
 
 #### Option 1: Extract Addons
 
-- This option scans the current directory and subdirectories for `.gma` and `.bin` files and extracts them.
-  - Navigate to the `Extracted-Addons` folder, and copy the folders to your Garry's Mod Addon directory.
+- Scans the current directory and subdirectories for `.gma` and `.bin` files and extracts them.
+  - Navigate to the `Extracted-Addons` folder and copy the folders to your Garry's Mod Addon directory.
 
 #### Option 2: Extract Archives
 
-- This option scans the current directory for archive files (`.zip`, `.rar`, `.7z`, `.tar`, `.tar.xz`, `.xz` and `.bz2`) and extracts them.
-
-- You can remove the `Leftover` folder, which contains the `.gma` and `.bin` and archives to free up some space.
+- Scans the current directory for archive files (`.zip`, `.rar`, `.7z`, `.tar`, `.tar.xz`, `.xz`, and `.bz2`) and extracts them.
+  - You can remove the `Leftover` folder, which contains the `.gma`, `.bin`, and archives to free up space.
 
 ## Building VAE
 

@@ -20,16 +20,19 @@ def get_executable_paths():
     }
 
     if current_platform not in platform_paths:
-        raise Exception(f"Unsupported platform: {current_platform}.\nSupported platforms are: Windows, Linux, macOS.")
+        raise Exception(f"Unsupported platform: {current_platform}. Supported platforms are: Windows, Linux, macOS.")
 
     executable_path = {
         exe: path.join(base_path, current_platform, exe_name)
         for exe, exe_name in platform_paths[current_platform].items()
     }
 
-    for executable, exe_path in executable_path.items():
+    for exe, exe_path in executable_path.items():
         if not path.exists(exe_path):
-            executable_path[executable] = input(f"Could not find {executable} at {exe_path}.\nProvide the full path to the {executable} executable: ").strip()
+            exe_path = input(f"Could not find {exe} at {exe_path}. Please provide the full path to the {exe} executable: ").strip()
+            if not path.exists(exe_path):
+                raise FileNotFoundError(f"Provided path for {exe} does not exist: {exe_path}")
+            executable_path[exe] = exe_path
 
     return executable_path
 

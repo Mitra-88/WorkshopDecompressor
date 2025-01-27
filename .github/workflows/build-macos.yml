@@ -52,7 +52,7 @@ jobs:
           rm -f dist/VAE/Bin/Linux/7zz
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v4.6.0
         with:
           name: VAE-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-macOS-Arm64
           path: dist/VAE
