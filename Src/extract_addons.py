@@ -13,9 +13,9 @@ excluded_directories = ['Bin', 'Leftover', '_internal', 'Extracted-Addons']
 def get_executable_paths():
     base_path = 'Bin'
     platform_paths = {
-        'Windows': {'7zz': '7zz.exe', 'fastgmad': 'fastgmad.exe'},
-        'Linux': {'7zz': '7zz', 'fastgmad': 'fastgmad'},
-        'Darwin': {'7zz': '7zz', 'fastgmad': 'fastgmad'}
+        'Windows': {'7z': '7z.exe', 'fastgmad': 'fastgmad.exe'},
+        'Linux': {'7z': '7z', 'fastgmad': 'fastgmad'},
+        'Darwin': {'7z': '7z', 'fastgmad': 'fastgmad'}
     }
 
     if current_platform not in platform_paths:
@@ -92,7 +92,7 @@ def remove_empty_directories(start_dir):
 def main():
     start_time = time()
     exec_paths = get_executable_paths()
-    seven_zip_path = exec_paths['7zz']
+    seven_zip_path = exec_paths['7z']
     fastgmad_path = exec_paths['fastgmad']
 
     base_extract_dir = path.join('Extracted-Addons')
