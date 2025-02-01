@@ -2,10 +2,9 @@ from time import time
 from uuid import uuid4
 from platform import system
 from subprocess import run, DEVNULL
-from multiprocessing import cpu_count
 from shutil import move, Error as ShutilError
 from concurrent.futures import ThreadPoolExecutor
-from os import path, scandir, rename, makedirs, rmdir, listdir
+from os import path, scandir, rename, makedirs, rmdir, listdir, cpu_count
 from utils import format_time
 
 current_platform = system()
