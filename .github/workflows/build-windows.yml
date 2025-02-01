@@ -48,8 +48,8 @@ jobs:
           Move-Item -Path 'dist\VAE\_internal\Bin' -Destination 'dist\VAE\Bin'
           Remove-Item -Path 'dist\VAE\Bin\Linux\fastgmad' -Force
           Remove-Item -Path 'dist\VAE\Bin\Darwin\fastgmad' -Force
-          Remove-Item -Path 'dist\VAE\Bin\Linux\7zz' -Force
-          Remove-Item -Path 'dist\VAE\Bin\Darwin\7zz' -Force
+          Remove-Item -Path 'dist\VAE\Bin\Linux\7z' -Force
+          Remove-Item -Path 'dist\VAE\Bin\Darwin\7z' -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.0
