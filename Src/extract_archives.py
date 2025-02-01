@@ -1,12 +1,12 @@
 from time import time
 from uuid import uuid4
-from shutil import move, Error as ShutilError
 from zipfile import ZipFile
 from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
 from os import path, makedirs, walk
 from multiprocessing import cpu_count
+from shutil import move, Error as ShutilError
 from concurrent.futures import ThreadPoolExecutor
 from utils import format_time
 
@@ -35,7 +35,12 @@ def extract_archive(archive_path, archive_count):
         if not path.exists(leftover_folder):
             makedirs(leftover_folder)
 
-        move(archive_path, path.join(leftover_folder, path.basename(archive_path)))
+        destination_path = path.join(leftover_folder, path.basename(archive_path))
+        if path.exists(destination_path):
+            unique_id = uuid4().hex
+            destination_path = path.join(leftover_folder, f"{path.splitext(path.basename(archive_path))[0]}_{unique_id}{extension}")
+
+        move(archive_path, destination_path)
         print(f"Processed and moved: {archive_path}")
         
         if extension in archive_count:

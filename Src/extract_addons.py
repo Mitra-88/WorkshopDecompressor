@@ -1,9 +1,9 @@
 from time import time
 from uuid import uuid4
-from shutil import move, Error as ShutilError
 from platform import system
 from subprocess import run, DEVNULL
 from multiprocessing import cpu_count
+from shutil import move, Error as ShutilError
 from concurrent.futures import ThreadPoolExecutor
 from os import path, scandir, rename, makedirs, rmdir, listdir
 from utils import format_time
