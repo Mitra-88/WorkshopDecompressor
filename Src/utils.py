@@ -1,74 +1,73 @@
 from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
 
+vae_version = f"v2.4.3 (60325fa)"
+build_date = "2025-02-01 (Saturday, February 01, 2025)"
+
 def format_time(seconds):
-    hours, remaining_seconds = divmod(seconds, 3600)
-    minutes, remaining_seconds = divmod(remaining_seconds, 60)
-
+    hours, remaining = divmod(seconds, 3600)
+    minutes, remaining = divmod(remaining, 60)
+    
     if hours > 0:
-        return f"{hours}h {minutes}m {seconds:.3f}s"
-    elif minutes > 0:
-        return f"{minutes}m {seconds:.3f}s"
-    else:
-        return f"{seconds:.3f}s"
+        return f"{hours:.0f}h {minutes:.0f}m {remaining:.3f}s"
+    if minutes > 0:
+        return f"{minutes:.0f}m {remaining:.3f}s"
+    return f"{remaining:.3f}s"
 
-def normalize_architecture(arch: str) -> str:
-    arch_map = {
+def normalize_architecture(arch):
+    return {
         "x86_64": "64-Bit",
         "64bit": "64-Bit",
         "arm64": "ARM64",
         "aarch64": "ARM64",
-    }
-    return arch_map.get(arch, arch)
+    }.get(arch, arch)
 
-def get_windows_info() -> str:
+def get_windows_info():
     try:
-        win_version, _, _, _ = win32_ver()
-        win_edition = win32_edition()
+        version = win32_ver()[0]
+        edition = win32_edition()
         arch = normalize_architecture(architecture()[0])
-        return f"Windows {win_version} {win_edition} {arch}"
-    except Exception as e:
-        return f"Windows (Error: {e})"
+        return f"Windows {version} {edition} {arch}"
+    except Exception as error:
+        return f"Windows (Error: {error})"
 
-def get_linux_info() -> str:
+def get_linux_info():
     try:
-        distro_info = freedesktop_os_release()
-        pretty_name = distro_info.get("PRETTY_NAME", "Linux")
-        version = distro_info.get("VERSION", "")
-        version_id = distro_info.get("VERSION_ID", "")
+        distro = freedesktop_os_release()
+        name = distro.get("NAME", "Linux")
+        pretty_name = distro.get("PRETTY_NAME", "")
+        version = distro.get("VERSION", "")
+        version_id = distro.get("VERSION_ID", "")
         arch = normalize_architecture(architecture()[0])
 
         if pretty_name:
             return f"{pretty_name} {arch}"
-        elif version:
+        if version:
             return f"{version} {arch}"
-        else:
-            name = distro_info.get("NAME", "Linux")
-            if version_id:
-                return f"{name} {version_id} {arch}"
-            else:
-                return f"{name} {arch}"
+        
+        components = [name]
+        if version_id:
+            components.append(version_id)
+        return f"{' '.join(components)} {arch}"
 
     except OSError:
         return f"Linux {normalize_architecture(architecture()[0])}"
-    except Exception as e:
-        return f"Linux (Error: {e})"
+    except Exception as error:
+        return f"Linux (Error: {error})"
 
-def get_macos_info() -> str:
+def get_macos_info():
     try:
-        mac_version = mac_ver()[0]
+        version = mac_ver()[0]
         arch = normalize_architecture(machine())
-        return f"macOS {mac_version} {arch}"
-    except Exception as e:
-        return f"macOS (Error: {e})"
+        return f"macOS {version} {arch}"
+    except Exception as error:
+        return f"macOS (Error: {error})"
 
-def get_os_info() -> str:
-    sys = system()
-
-    if sys == "Windows":
-        return get_windows_info()
-    elif sys == "Linux":
-        return get_linux_info()
-    elif sys == "Darwin":
-        return get_macos_info()
-    else:
-        return f"Unknown OS (System: {sys})"
+def get_os_info():
+    system_name = system()
+    handlers = {
+        "Windows": get_windows_info,
+        "Linux": get_linux_info,
+        "Darwin": get_macos_info,
+    }
+    handler = handlers.get(system_name)
+    return handler() if handler else f"Unknown OS (System: {system_name})"

@@ -43,16 +43,17 @@ jobs:
         run: |
           pyinstaller --noconfirm --onedir --console --name "VAE" --strip --clean --optimize "2" --add-data "Src/extract_addons.py:." --add-data "Src/extract_archives.py:." --add-data "Src/Bin:Bin/"  "Src/cli.py"
 
-      - name: Move Bin and Remove Gmad And 7-zip Windows/Linux
+      - name: Move Bin Folder and Remove Gmad And 7-zip from Windows/Linux
         run: |
           mv dist/VAE/_internal/Bin dist/VAE/Bin
           rm -r dist/VAE/Bin/Windows/fastgmad.exe
-          rm -f dist/VAE/Bin/Windows/7zz.exe
+          rm -f dist/VAE/Bin/Windows/7z.exe
           rm -f dist/VAE/Bin/Linux/fastgmad
-          rm -f dist/VAE/Bin/Linux/7zz
+          rm -f dist/VAE/Bin/Linux/7z
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.0
         with:
-          name: VAE-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-macOS-Arm64
+          name: VAE-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-macOS-ARM64
           path: dist/VAE
+          compression-level: 9

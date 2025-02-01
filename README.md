@@ -2,7 +2,7 @@
 
 **VAE** is a command-line tool for players of Garry's Mod who need to extract content from addon files. This utility supports both modern `.gma` addons and legacy `.bin` addons, a tool for players who download addons from sources such as SteamCMD, third-party programs, websites, or for those using cracked versions of the game.
 
-## Features
+## Key Features
 
 - 🖥️ Cross-Platform: Works on Windows, macOS, and Linux.
 - 📦 Addon Extraction: Extract both modern `.gma` and legacy `.bin` addon formats.
@@ -11,49 +11,65 @@
 - 🛠️ Easy to Use: A simple command-line interface.
 - 🔄 GWTool Replacement: Drop-in replacement for GWTool.
 
-## Requirements
+## System Requirements
 
-| Operating System | Supported Versions                                       | Architecture |
-|------------------|----------------------------------------------------------|--------------|
-| Windows          | 11, 10, 8.1, 8                                           | 64-bit       |
-| Linux            | Debian 12, Ubuntu 22.04, Fedora 41, Arch Linux, OpenSUSE | 64-bit       |
-| macOS            | macOS 15, 14, 13, 12, 11, 10.15                          | ARM64        |
+- **RAM:** 20 MB
+- **Disk Space:** 25 MB
 
-- **RAM Usage:** 20MB
-- **Disk Space:** 25MB
+| **Operating System** | **Supported Versions**                                   | **Architecture** |
+|----------------------|----------------------------------------------------------|------------------|
+| **Windows**          | 11, 10, 8.1, 8                                           | 64-bit           |
+| **Linux**            | Debian 12, Ubuntu 22.04, Fedora 41, Arch Linux, OpenSUSE | 64-bit           |
+| **macOS**            | 15, 14, 13, 12, 11, 10.15                                | ARM64            |
 
-## Installation
+## How to Install
 
-To install VAE, download the [latest release](https://github.com/VermeilChan/VAE/releases/latest).
+1. **Download the Latest Release:**  
+   Visit the [latest release page](https://github.com/VermeilChan/VAE/releases/latest).
 
-- **Windows:** `VAE-2.x.x-Windows-x64.7z`
-- **Linux:** `VAE-2.x.x-Linux-x64.tar.xz`
-- **macOS:** `VAE-2.x.x-macOS-Arm64.zip`
+2. **Choose the Correct File:**
+   - **Windows:** `VAE-2.x.x-Windows-x64.7z`
+   - **Linux:** `VAE-2.x.x-Linux-x64.tar.xz`
+   - **macOS:** `VAE-2.x.x-macOS-ARM64.zip`
 
-## Usage
+3. **Extract the Archive:**  
+   Extract the downloaded file to get the VAE files.
 
-### Step 1: Extract the Downloaded Archive
+## How to Use VAE
 
-1. Extract the contents of VAE.
-2. Copy the extracted content to the directory where your addons are located. For example:
-  - **SteamCMD Path:** `path-to-steamcmd/steamapps/workshop/content/4000`
-  - **3rd Party Websites/Programs:** Place VAE in the directory containing your archives or folders. VAE will scan the current directory and any subdirectories.
+### Step 1: Place VAE in Your Addons Folder
 
-### Step 2: Run the Program
+- **For SteamCMD Users:**  
+  Copy VAE to the directory where your addons are stored (e.g., `path-to-steamcmd/steamapps/workshop/content/4000`).
 
-Upon launching the program, you will be presented with two options:
+<img src="Screenshot.png" alt="Example" width="430" height="242">
+
+- **For Other Users:**  
+  Place VAE in the directory with your addon archives or folders. VAE will automatically scan the current directory and its subdirectories.
+
+<img src="Screenshot-2.png" alt="Example" width="374" height="287">
+
+### Step 2: Run VAE
+
+When you start the program, you will see two options:
 
 #### Option 1: Extract Addons
 
-- Scans the current directory and subdirectories for `.gma` and `.bin` files and extracts them.
-  - Navigate to the `Extracted-Addons` folder and copy the folders to your Garry's Mod Addon directory.
+- **What It Does:**  
+  Scans the current directory and its subdirectories for `.gma` and `.bin` files.
+  
+- **After Extraction:**  
+  The extracted files are saved in the `Extracted-Addons` folder. Simply copy these folders into your Garry's Mod addon directory.
 
 #### Option 2: Extract Archives
 
-- Scans the current directory for archive files (`.zip`, `.rar`, `.7z`, `.tar`, `.tar.xz`, `.xz`, and `.bz2`) and extracts them.
-  - You can remove the `Leftover` folder, which contains the `.gma`, `.bin`, and archives to free up space.
+- **What It Does:**  
+  Searches for archive files (like `.zip`, `.rar`, `.7z`, etc.) and extracts them.
+  
+- **After Extraction:**  
+  A folder named `Leftover` will be created. This folder contains the original `.gma`, `.bin`, and archive files. You can delete it later to free up space.
 
-## Building VAE
+## Building VAE from Source
 
 Please refer to the [build instructions](BUILD.md) for details on building VAE from source.
 
@@ -67,10 +83,9 @@ This project is licensed under the [GNU General Public License v3.0](LICENSE).
 
 ## Credits
 
-- **[Adamizo](https://github.com/adamizo):** The dumbest person I know. (the main reason why this program exist in first place)
 - **[PyInstaller](https://www.pyinstaller.org/):** For creating standalone executables.
 - **[Py7zr](https://pypi.org/project/py7zr/):** For 7z file extraction.
-- **[RarFile](https://pypi.org/project/rarfile/):** For rar file extraction.
-- **[FastGMAD](https://github.com/WilliamVenner/fastgmad):** Fast reimplementation of gmad. (Forked)
-- **[7-zip](https://www.7-zip.org/):** For extracting .bin files.
-- **[Program Icon](https://evangelion.fandom.com/wiki/Adam):** From Neon Genesis Evangelion (Adam). (Peak anime!!)
+- **[RarFile](https://pypi.org/project/rarfile/):** For extracting rar files.
+- **[FastGMAD](https://github.com/WilliamVenner/fastgmad):** Fast reimplementation of gmad (forked).
+- **[7-zip](https://www.7-zip.org/):** For extracting `.bin` files.
+- **[Program Icon](https://evangelion.fandom.com/wiki/Adam):** From *Neon Genesis Evangelion* (Adam).
