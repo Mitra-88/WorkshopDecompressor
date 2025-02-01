@@ -43,7 +43,7 @@ jobs:
         run: |
           pyinstaller --noconfirm --onedir --console --icon "Src/Icon/VAE.ico" --name "VAE" --clean --optimize "2" --version-file "version.txt" --add-data "Src/extract_addons.py;." --add-data "Src/extract_archives.py;." --add-data "Src/utils.py;." --add-data "Src/Bin;Bin/"  "Src/cli.py"
 
-      - name: Move Bin and Remove Gmad And 7-zip Linux/macOS
+      - name: Move Bin Folder and Remove Gmad And 7-zip from Linux/macOS
         run: |
           Move-Item -Path 'dist\VAE\_internal\Bin' -Destination 'dist\VAE\Bin'
           Remove-Item -Path 'dist\VAE\Bin\Linux\fastgmad' -Force
@@ -56,3 +56,4 @@ jobs:
         with:
           name: VAE-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-Windows-x64
           path: dist/VAE
+          compression-level: 9
