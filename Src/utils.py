@@ -2,7 +2,7 @@ from uuid import uuid4
 from datetime import datetime
 from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
 
-vae_version = f"v2.4.2 ({uuid4().hex[:7]})"
+vae_version = f"v2.4.3 ({uuid4().hex[:7]})"
 build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d, %Y)")
 
 def format_time(seconds):
