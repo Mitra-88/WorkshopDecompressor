@@ -125,7 +125,7 @@ def main():
     start_time = time()
     try:
         exec_paths = get_executable_paths()
-        seven_zip_path = exec_paths['7zz']
+        seven_zip_path = exec_paths['7z']
         fastgmad_path = exec_paths['fastgmad']
 
         base_extract_dir = path.join('Extracted-Addons')
