@@ -16,7 +16,7 @@ def handle_error(file_name, error):
     elif isinstance(error, PermissionError):
         print(f"Error: Permission denied - {file_name}")
     elif isinstance(error, (EOFError, ValueError)):
-        print(f"Error: Corrupt or unsupported archive - {file_name}: {error}")
+        print(f"Error: Corrupt - {file_name}: {error}")
     else:
         print(f"Unexpected error processing {file_name}: {error}")
 
@@ -78,7 +78,7 @@ def extract_bin_file(bin_file, seven_zip_path, addon_formats_count):
     print(f"Extracting {bin_file}...")
     try:
         run([seven_zip_path, 'x', bin_file, '-o' + path.dirname(bin_file)],
-            stdout=DEVNULL, stderr=DEVNULL, check=True)
+            stdout=DEVNULL, stderr=DEVNULL)
         addon_formats_count[".bin"] += 1
     except Exception as error:
         handle_error(bin_file, error)
@@ -89,7 +89,7 @@ def extract_gma_file(gma_file, fastgmad_path, addon_formats_count):
         makedirs(addon_folder, exist_ok=True)
         print(f"Extracting {gma_file} to {addon_folder}...")
         run([fastgmad_path, 'extract', '-file', gma_file, '-out', addon_folder],
-            stdout=DEVNULL, stderr=DEVNULL, check=True)
+            stdout=DEVNULL, stderr=DEVNULL)
         addon_formats_count[".gma"] += 1
     except Exception as error:
         handle_error(gma_file, error)
