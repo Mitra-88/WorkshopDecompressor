@@ -6,7 +6,7 @@ from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
 from os import path, makedirs, walk, cpu_count
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from utils import format_time
 
 archive_handlers = {
@@ -40,19 +40,19 @@ def extract_archive(archive_path, archive_count):
             destination_path = path.join(leftover_folder, f"{path.splitext(path.basename(archive_path))[0]}_{unique_id}{extension}")
 
         move(archive_path, destination_path)
-        print(f"Processed and moved: {archive_path}")
+        print(f"Processed and moved: {path.basename(archive_path)}")
         
         if extension in archive_count:
             archive_count[extension] += 1
 
     except FileNotFoundError:
-        print(f"Error: File not found - {archive_path.name}")
+        print(f"Error: File not found - {path.basename(archive_path)}")
     except PermissionError:
-        print(f"Error: Permission denied - {archive_path.name}")
+        print(f"Error: Permission denied - {path.basename(archive_path)}")
     except (EOFError, ValueError) as archive_error:
-        print(f"Error: Corrupt or unsupported archive - {archive_path.name}: {archive_error}")
+        print(f"Error: Corrupt or unsupported archive - {path.basename(archive_path)}: {archive_error}")
     except Exception as error:
-        print(f"Unexpected error processing {archive_path.name}: {str(error)}")
+        print(f"Unexpected error processing {path.basename(archive_path)}: {str(error)}")
 
 def process_archives():
     excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
@@ -80,7 +80,7 @@ def main():
 
     workers = max(1, cpu_count())
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
+    with ProcessPoolExecutor(max_workers=workers) as executor:
         executor.map(extract_archive, archives, [archive_count] * len(archives))
 
     print("\nSummary:")
