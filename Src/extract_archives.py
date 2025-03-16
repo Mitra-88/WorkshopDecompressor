@@ -40,19 +40,19 @@ def extract_archive(archive_path, archive_count):
             destination_path = path.join(leftover_folder, f"{path.splitext(path.basename(archive_path))[0]}_{unique_id}{extension}")
 
         move(archive_path, destination_path)
-        print(f"Processed and moved: {path.basename(archive_path)}")
+        print(f"Processed and moved: {archive_path}")
         
         if extension in archive_count:
             archive_count[extension] += 1
 
     except FileNotFoundError:
-        print(f"Error: File not found - {path.basename(archive_path)}")
+        print(f"Error: File not found - {archive_path}")
     except PermissionError:
-        print(f"Error: Permission denied - {path.basename(archive_path)}")
+        print(f"Error: Permission denied - {archive_path}")
     except (EOFError, ValueError) as archive_error:
-        print(f"Error: Corrupt or unsupported archive - {path.basename(archive_path)}: {archive_error}")
+        print(f"Error: Corrupt or unsupported archive - {archive_path}: {archive_error}")
     except Exception as error:
-        print(f"Unexpected error processing {path.basename(archive_path)}: {str(error)}")
+        print(f"Unexpected error processing {archive_path}: {str(error)}")
 
 def process_archives():
     excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
