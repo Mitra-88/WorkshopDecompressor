@@ -5,7 +5,7 @@ from zipfile import ZipFile
 from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
-from os import path, makedirs, walk, cpu_count
+from os import path, makedirs, walk
 from concurrent.futures import ProcessPoolExecutor
 from utils import format_time
 
@@ -78,9 +78,7 @@ def main():
 
     archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0,}
 
-    workers = max(1, cpu_count())
-
-    with ProcessPoolExecutor(max_workers=workers) as executor:
+    with ProcessPoolExecutor() as executor:
         executor.map(extract_archive, archives, [archive_count] * len(archives))
 
     print("\nSummary:")
