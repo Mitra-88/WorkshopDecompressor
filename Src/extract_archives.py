@@ -5,7 +5,7 @@ from zipfile import ZipFile
 from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
-from os import path, makedirs, walk
+from os import path, makedirs, walk, cpu_count
 from concurrent.futures import ProcessPoolExecutor
 from utils import format_time
 
@@ -19,7 +19,7 @@ archive_handlers = {
     ".bz2": TarFile,
 }
 
-def extract_archive(archive_path, archive_count):
+def extract_archive(archive_path):
     extension = path.splitext(archive_path)[1]
     archive_handler = archive_handlers.get(extension)
 
@@ -41,10 +41,7 @@ def extract_archive(archive_path, archive_count):
 
         move(archive_path, destination_path)
         print(f"Processed and moved: {archive_path}")
-        
-        if extension in archive_count:
-            archive_count[extension] += 1
-
+        return extension
     except FileNotFoundError:
         print(f"Error: File not found - {archive_path}")
     except PermissionError:
@@ -53,11 +50,11 @@ def extract_archive(archive_path, archive_count):
         print(f"Error: Corrupt or unsupported archive - {archive_path}: {archive_error}")
     except Exception as error:
         print(f"Unexpected error processing {archive_path}: {str(error)}")
+    return None
 
 def process_archives():
     excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
     archives = []
-
     archive_extensions = {extension[1:] for extension in archive_handlers.keys()}
 
     for root, directories, files in walk('.'):
@@ -65,7 +62,7 @@ def process_archives():
         for file in files:
             if file.split('.')[-1] in archive_extensions:
                 archives.append(path.join(root, file))
-    
+
     return archives
 
 def main():
@@ -76,10 +73,15 @@ def main():
         print("No archives found.")
         return
 
-    archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0,}
+    workers = max(1, cpu_count())
 
-    with ProcessPoolExecutor() as executor:
-        executor.map(extract_archive, archives, [archive_count] * len(archives))
+    with ProcessPoolExecutor(max_workers=workers) as executor:
+        results = list(executor.map(extract_archive, archives))
+
+    archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0}
+    for ext in results:
+        if ext in archive_count:
+            archive_count[ext] += 1
 
     print("\nSummary:")
     for extension, count in archive_count.items():
@@ -88,5 +90,7 @@ def main():
 
     elapsed_time = time() - start_time
     formatted_time = format_time(elapsed_time)
-
     print(f"Total time taken: {formatted_time}")
+
+if __name__ == "__main__":
+    main()
