@@ -5,8 +5,8 @@ from zipfile import ZipFile
 from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
-from os import path, makedirs, walk
-from concurrent.futures import ProcessPoolExecutor
+from os import path, makedirs, walk, cpu_count
+from concurrent.futures import ThreadPoolExecutor
 from utils import format_time
 
 archive_handlers = {
@@ -19,9 +19,9 @@ archive_handlers = {
     ".bz2": TarFile,
 }
 
-def extract_archive(archive_path):
+def extract_archive(archive_path, archive_count):
     extension = path.splitext(archive_path)[1]
-    archive_handler = archive_handlers[extension]
+    archive_handler = archive_handlers.get(extension)
 
     try:
         unique_folder = uuid4().hex
@@ -31,27 +31,28 @@ def extract_archive(archive_path):
             archive.extractall(unique_folder)
 
         leftover_folder = 'Leftover'
-        makedirs(leftover_folder, exist_ok=True)
+        if not path.exists(leftover_folder):
+            makedirs(leftover_folder)
 
         destination_path = path.join(leftover_folder, path.basename(archive_path))
         if path.exists(destination_path):
-            destination_path = path.join(leftover_folder, f"{path.basename(archive_path)}-{uuid4().hex}{extension}")
+            unique_id = uuid4().hex
+            destination_path = path.join(leftover_folder, f"{path.splitext(path.basename(archive_path))[0]}_{unique_id}{extension}")
 
         move(archive_path, destination_path)
         print(f"Processed and moved: {archive_path}")
         
-        return (extension, True)
+        if extension in archive_count:
+            archive_count[extension] += 1
 
     except FileNotFoundError:
-        print(f"Error: File not found - {archive_path}")
+        print(f"Error: File not found - {archive_path.name}")
     except PermissionError:
-        print(f"Error: Permission denied - {archive_path}")
+        print(f"Error: Permission denied - {archive_path.name}")
     except (EOFError, ValueError) as archive_error:
-        print(f"Error: Corrupt or unsupported archive - {archive_path}: {archive_error}")
+        print(f"Error: Corrupt or unsupported archive - {archive_path.name}: {archive_error}")
     except Exception as error:
-        print(f"Unexpected error processing {archive_path}: {str(error)}")
-    
-    return (extension, False)
+        print(f"Unexpected error processing {archive_path.name}: {str(error)}")
 
 def process_archives():
     excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
@@ -74,16 +75,14 @@ def main():
     if not archives:
         print("No archives found.")
         return
-    
-    archive_count = {extension: 0 for extension in archive_handlers.keys()}
-    
-    with ProcessPoolExecutor() as executor:
-        results = executor.map(extract_archive, archives)
-    
-    for extension, success in results:
-        if success:
-            archive_count[extension] += 1
-    
+
+    archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0,}
+
+    workers = max(1, cpu_count())
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        executor.map(extract_archive, archives, [archive_count] * len(archives))
+
     print("\nSummary:")
     for extension, count in archive_count.items():
         if count > 0:
