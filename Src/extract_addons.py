@@ -1,13 +1,11 @@
 from time import time
 from uuid import uuid4
 from shutil import move
-from platform import system
 from subprocess import run, DEVNULL
 from concurrent.futures import ThreadPoolExecutor
 from os import path, scandir, rename, makedirs, rmdir, listdir, cpu_count
-from utils import format_time
+from utils import format_time, get_executable_paths
 
-current_platform = system()
 excluded_directories = ['Bin', 'Leftover', '_internal', 'Extracted-Addons']
 
 def handle_error(file_name, error):
@@ -19,31 +17,6 @@ def handle_error(file_name, error):
         print(f"Error: Corrupt - {file_name}: {error}")
     else:
         print(f"Unexpected error processing {file_name}: {error}")
-
-def get_executable_paths():
-    base_path = 'Bin'
-    platform_paths = {
-        'Windows': {'7z': '7z.exe', 'fastgmad': 'fastgmad.exe'},
-        'Linux': {'7z': '7z', 'fastgmad': 'fastgmad'},
-        'Darwin': {'7z': '7z', 'fastgmad': 'fastgmad'}
-    }
-
-    if current_platform not in platform_paths:
-        raise Exception(f"Unsupported platform: {current_platform}. Supported platforms are: Windows, Linux, macOS.")
-
-    executable_path = {
-        exe: path.join(base_path, current_platform, exe_name)
-        for exe, exe_name in platform_paths[current_platform].items()
-    }
-
-    for exe, exe_path in executable_path.items():
-        if not path.exists(exe_path):
-            exe_path = input(f"Could not find {exe} at {exe_path}. Please provide the full path to the {exe} executable: ").strip()
-            if not path.exists(exe_path):
-                raise FileNotFoundError(f"Provided path for {exe} does not exist: {exe_path}")
-            executable_path[exe] = exe_path
-
-    return executable_path
 
 def generate_unique_name(file_path):
     return path.join(path.dirname(file_path), uuid4().hex + path.splitext(file_path)[-1])
@@ -77,7 +50,8 @@ def add_extension_to_files_without_format(start_dir):
 def extract_bin_file(bin_file, seven_zip_path, addon_formats_count):
     print(f"Extracting {bin_file}...")
     try:
-        run([seven_zip_path, 'x', bin_file, '-o' + path.dirname(bin_file)],
+        extract_directory = path.join(path.dirname(bin_file), uuid4().hex)
+        run([seven_zip_path, 'x', bin_file, '-o' + extract_directory],
             stdout=DEVNULL, stderr=DEVNULL)
         addon_formats_count[".bin"] += 1
     except Exception as error:

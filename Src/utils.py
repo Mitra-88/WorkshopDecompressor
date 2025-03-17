@@ -1,4 +1,5 @@
 from uuid import uuid4
+from os import path
 from datetime import datetime
 from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
 
@@ -72,3 +73,29 @@ def get_os_info():
     }
     handler = handlers.get(system_name)
     return handler() if handler else f"Unknown OS (System: {system_name})"
+
+def get_executable_paths():
+    current_platform = system()
+    base_path = 'Bin'
+    platform_paths = {
+        'Windows': {'7z': '7z.exe', 'fastgmad': 'fastgmad.exe'},
+        'Linux': {'7z': '7z', 'fastgmad': 'fastgmad'},
+        'Darwin': {'7z': '7z', 'fastgmad': 'fastgmad'}
+    }
+
+    if current_platform not in platform_paths:
+        raise Exception(f"Unsupported platform: {current_platform}. Supported platforms are: Windows, Linux, macOS.")
+
+    executable_path = {
+        exe: path.join(base_path, current_platform, exe_name)
+        for exe, exe_name in platform_paths[current_platform].items()
+    }
+
+    for exe, exe_path in executable_path.items():
+        if not path.exists(exe_path):
+            exe_path = input(f"Could not find {exe} at {exe_path}. Please provide the full path to the {exe} executable: ").strip()
+            if not path.exists(exe_path):
+                raise FileNotFoundError(f"Provided path for {exe} does not exist: {exe_path}")
+            executable_path[exe] = exe_path
+
+    return executable_path
