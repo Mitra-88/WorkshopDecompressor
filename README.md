@@ -14,7 +14,7 @@
 ## System Requirements
 
 - **RAM:** 20 MB
-- **Disk Space:** 25 MB
+- **Disk Space:** 40 MB
 
 | **Operating System** | **Supported Versions**                                   | **Architecture** |
 |----------------------|----------------------------------------------------------|------------------|
