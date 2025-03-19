@@ -8,7 +8,7 @@ from PyInstaller import __version__ as pyinstaller_version
 
 def display_info():
     print(
-        f"'\n{'=' * 75}\n"
+        f"\n{'=' * 75}\n"
         f"Vermeil's Addon Extractor {vae_version}, {get_os_info()}.\n"
         f"Build Date: {build_date}.\n"
         f"Build Info: Pyinstaller {pyinstaller_version}, Py7zr {py7zr_version}, "
