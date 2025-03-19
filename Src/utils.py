@@ -100,7 +100,7 @@ def get_executable_paths():
 
     return executable_path
 
-def generate_unique_name(file_path):
+def unique_name(file_path):
     base, extension = path.splitext(file_path)
     new_name = f"{base}-{uuid4().hex[:7]}{extension}"
     print(f"Detected duplicate file. Renaming to: {new_name}")
