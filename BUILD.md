@@ -32,7 +32,7 @@ _Windows 7 is technically supported, but you need PyInstaller 4.10._
 You need the following to compile VAE:
 
 - [Python](https://www.python.org/) 3.10+
-- [PyInstaller](https://www.pyinstaller.org/) 6.11.1+
+- [PyInstaller](https://www.pyinstaller.org/) 6.12.0+
 - [Py7zr](https://pypi.org/project/py7zr/) 0.22.0+
 - [RarFile](https://pypi.org/project/rarfile/) 4.2+
 
