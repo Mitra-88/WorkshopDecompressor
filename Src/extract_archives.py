@@ -6,7 +6,7 @@ from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
 from os import path, makedirs, walk
-from utils import format_time
+from utils import format_time, unique_name
 
 archive_handlers = {
     ".zip": ZipFile,
@@ -34,7 +34,7 @@ def extract_archive(archive_path, archive_count):
 
         destination_path = path.join(leftover_folder, path.basename(archive_path))
         if path.exists(destination_path):
-            destination_path = path.join(leftover_folder, f"{path.splitext(path.basename(archive_path))[0]}-{uuid4().hex}{extension}")
+            destination_path = unique_name(destination_path)
 
         move(archive_path, destination_path)
         print(f"Processed and moved: {archive_path}")

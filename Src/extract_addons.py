@@ -4,7 +4,7 @@ from shutil import move
 from subprocess import run, DEVNULL
 from concurrent.futures import ThreadPoolExecutor
 from os import path, scandir, rename, makedirs, rmdir, listdir, cpu_count
-from utils import format_time, get_executable_paths
+from utils import format_time, get_executable_paths, unique_name
 
 excluded_directories = ['Bin', 'Leftover', '_internal', 'Extracted-Addons']
 
@@ -17,9 +17,6 @@ def handle_error(file_name, error):
         print(f"Error: Corrupt - {file_name}: {error}")
     else:
         print(f"Unexpected error processing {file_name}: {error}")
-
-def generate_unique_name(file_path):
-    return path.join(path.dirname(file_path), uuid4().hex + path.splitext(file_path)[-1])
 
 def find_files_with_extension(extension, start_dir):
     files = []
@@ -74,7 +71,7 @@ def move_files_to_leftover(files, leftover_dir):
         for file in files:
             destination = path.join(leftover_dir, path.basename(file))
             if path.exists(destination):
-                destination = generate_unique_name(destination)
+                destination = unique_name(destination)
             try:
                 move(file, destination)
             except Exception as error:
