@@ -3,20 +3,8 @@ from uuid import uuid4
 from shutil import move
 from subprocess import run, DEVNULL
 from concurrent.futures import ThreadPoolExecutor
-from os import path, scandir, rename, makedirs, rmdir, listdir, cpu_count
-from utils import format_time, get_executable_paths, unique_name
-
-excluded_directories = ['Bin', 'Leftover', '_internal', 'Extracted-Addons']
-
-def handle_error(file_name, error):
-    if isinstance(error, FileNotFoundError):
-        print(f"Error: File not found - {file_name}")
-    elif isinstance(error, PermissionError):
-        print(f"Error: Permission denied - {file_name}")
-    elif isinstance(error, (EOFError, ValueError)):
-        print(f"Error: Corrupt - {file_name}: {error}")
-    else:
-        print(f"Unexpected error processing {file_name}: {error}")
+from os import path, scandir, rename, makedirs, cpu_count
+from utils import format_time, get_executable_paths, unique_name, handle_error, excluded_directories, remove_empty_directories
 
 def find_files_with_extension(extension, start_dir):
     files = []
@@ -79,19 +67,6 @@ def move_files_to_leftover(files, leftover_dir):
     except Exception as error:
         handle_error(leftover_dir, error)
 
-def remove_empty_directories(start_dir):
-    try:
-        for entry in scandir(start_dir):
-            if entry.is_dir() and entry.name not in excluded_directories:
-                remove_empty_directories(entry.path)
-                try:
-                    if not listdir(entry.path):
-                        rmdir(entry.path)
-                except Exception as error:
-                    handle_error(entry.path, error)
-    except Exception as error:
-        handle_error(start_dir, error)
-
 def main():
     start_time = time()
     try:
@@ -135,12 +110,13 @@ def main():
     except Exception as error:
         handle_error("main execution", error)
     finally:
-        end_time = time()
-        elapsed_time = end_time - start_time
-        formatted_time = format_time(elapsed_time)
+        if any(addon_formats_count.values()):
+            end_time = time()
+            elapsed_time = end_time - start_time
+            formatted_time = format_time(elapsed_time)
 
-        print("\nSummary:")
-        for addon_format, count in addon_formats_count.items():
-            if count > 0:
-                print(f"Total {addon_format} files processed: {count}")
-        print(f"Total time taken: {formatted_time}")
+            print("\nSummary:")
+            for addon_format, count in addon_formats_count.items():
+                if count > 0:
+                    print(f"Total {addon_format} files processed: {count}")
+            print(f"Total time taken: {formatted_time}\n")

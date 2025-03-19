@@ -1,7 +1,9 @@
-from os import path
 from uuid import uuid4
 from datetime import datetime
+from os import path, rmdir, listdir, scandir
 from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
+
+excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
 
 vae_version = f"v2.4.4 ({uuid4().hex[:7]})"
 build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d, %Y)")
@@ -105,3 +107,26 @@ def unique_name(file_path):
     new_name = f"{base}-{uuid4().hex[:7]}{extension}"
     print(f"Detected duplicate file. Renaming to: {new_name}")
     return new_name
+
+def remove_empty_directories(start_dir):
+    try:
+        for entry in scandir(start_dir):
+            if entry.is_dir() and entry.name not in excluded_directories:
+                remove_empty_directories(entry.path)
+                try:
+                    if not listdir(entry.path):
+                        rmdir(entry.path)
+                except Exception as error:
+                    handle_error(entry.path, error)
+    except Exception as error:
+        handle_error(start_dir, error)
+
+def handle_error(file_name, error):
+    if isinstance(error, FileNotFoundError):
+        print(f"Error: File not found - {file_name}")
+    elif isinstance(error, PermissionError):
+        print(f"Error: Permission denied - {file_name}")
+    elif isinstance(error, (EOFError, ValueError)):
+        print(f"Error: Corrupt - {file_name}: {error}")
+    else:
+        print(f"Unexpected error processing {file_name}: {error}")

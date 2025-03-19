@@ -6,7 +6,7 @@ from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
 from os import path, makedirs, walk
-from utils import format_time, unique_name
+from utils import format_time, unique_name, excluded_directories, remove_empty_directories
 
 archive_handlers = {
     ".zip": ZipFile,
@@ -52,7 +52,6 @@ def extract_archive(archive_path, archive_count):
         print(f"Unexpected error processing {archive_path.name}: {str(error)}")
 
 def process_archives():
-    excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
     archives = []
 
     archive_extensions = {extension[1:] for extension in archive_handlers.keys()}
@@ -78,12 +77,16 @@ def main():
     for archive in archives:
         extract_archive(archive, archive_count)
 
-    print("\nSummary:")
-    for extension, count in archive_count.items():
-        if count > 0:
-            print(f"Total {extension} files processed: {count}")
+    print("Removing empty directories...")
+    remove_empty_directories('.')
 
-    elapsed_time = time() - start_time
-    formatted_time = format_time(elapsed_time)
+    if any(archive_count.values()):
+        print("\nSummary:")
+        for extension, count in archive_count.items():
+            if count > 0:
+                print(f"Total {extension} files processed: {count}")
 
-    print(f"Total time taken: {formatted_time}")
+        elapsed_time = time() - start_time
+        formatted_time = format_time(elapsed_time)
+
+        print(f"Total time taken: {formatted_time}\n")
