@@ -37,7 +37,7 @@ jobs:
         run: source .venv/bin/activate
 
       - name: Install dependencies
-        run: pip install --upgrade pyinstaller rarfile py7zr
+        run: pip install --upgrade -r requirements.txt
 
       - name: Build with PyInstaller
         run: |
