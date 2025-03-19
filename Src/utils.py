@@ -1,5 +1,5 @@
-from uuid import uuid4
 from os import path
+from uuid import uuid4
 from datetime import datetime
 from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
 
@@ -99,3 +99,9 @@ def get_executable_paths():
             executable_path[exe] = exe_path
 
     return executable_path
+
+def generate_unique_name(file_path):
+    base, extension = path.splitext(file_path)
+    new_name = f"{base}-{uuid4().hex[:7]}{extension}"
+    print(f"Detected duplicate file. Renaming to: {new_name}")
+    return new_name
