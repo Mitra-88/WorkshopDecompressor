@@ -1,7 +1,11 @@
+from uuid import uuid4
+from os import path, rmdir, listdir, scandir
 from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
 
-vae_version = f"v2.4.3 (60325fa)"
-build_date = "2025-02-01 (Saturday, February 01, 2025)"
+excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
+
+vae_version = f"v2.4.4 (8dd257f)"
+build_date = "2025-03-19 (Wednesday, March 19, 2025)"
 
 def format_time(seconds):
     hours, remaining = divmod(seconds, 3600)
@@ -18,7 +22,6 @@ def normalize_architecture(arch):
         "x86_64": "64-Bit",
         "64bit": "64-Bit",
         "arm64": "ARM64",
-        "aarch64": "ARM64",
     }.get(arch, arch)
 
 def get_windows_info():
@@ -71,3 +74,58 @@ def get_os_info():
     }
     handler = handlers.get(system_name)
     return handler() if handler else f"Unknown OS (System: {system_name})"
+
+def get_executable_paths():
+    current_platform = system()
+    base_path = 'Bin'
+    platform_paths = {
+        'Windows': {'7z': '7z.exe', 'fastgmad': 'fastgmad.exe'},
+        'Linux': {'7z': '7z', 'fastgmad': 'fastgmad'},
+        'Darwin': {'7z': '7z', 'fastgmad': 'fastgmad'}
+    }
+
+    if current_platform not in platform_paths:
+        raise Exception(f"Unsupported platform: {current_platform}. Supported platforms are: Windows, Linux, macOS.")
+
+    executable_path = {
+        exe: path.join(base_path, current_platform, exe_name)
+        for exe, exe_name in platform_paths[current_platform].items()
+    }
+
+    for exe, exe_path in executable_path.items():
+        if not path.exists(exe_path):
+            exe_path = input(f"Could not find {exe} at {exe_path}. Please provide the full path to the {exe} executable: ").strip()
+            if not path.exists(exe_path):
+                raise FileNotFoundError(f"Provided path for {exe} does not exist: {exe_path}")
+            executable_path[exe] = exe_path
+
+    return executable_path
+
+def unique_name(file_path):
+    base, extension = path.splitext(file_path)
+    new_name = f"{base}-{uuid4().hex[:7]}{extension}"
+    print(f"Detected duplicate file. Renaming to: {new_name}")
+    return new_name
+
+def remove_empty_directories(start_dir):
+    try:
+        for entry in scandir(start_dir):
+            if entry.is_dir() and entry.name not in excluded_directories:
+                remove_empty_directories(entry.path)
+                try:
+                    if not listdir(entry.path):
+                        rmdir(entry.path)
+                except Exception as error:
+                    handle_error(entry.path, error)
+    except Exception as error:
+        handle_error(start_dir, error)
+
+def handle_error(file_name, error):
+    if isinstance(error, FileNotFoundError):
+        print(f"Error: File not found - {file_name}")
+    elif isinstance(error, PermissionError):
+        print(f"Error: Permission denied - {file_name}")
+    elif isinstance(error, (EOFError, ValueError)):
+        print(f"Error: Corrupt - {file_name}: {error}")
+    else:
+        print(f"Unexpected error processing {file_name}: {error}")
