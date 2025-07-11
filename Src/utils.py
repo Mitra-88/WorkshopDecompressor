@@ -4,8 +4,8 @@ from platform import system, architecture, win32_ver, win32_edition, freedesktop
 
 excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
 
-vae_version = f"v2.4.4 (8dd257f)"
-build_date = "2025-03-19 (Wednesday, March 19, 2025)"
+vae_version = f"v2.4.5 (3be74ee)"
+build_date = "2025-07-11 (Friday, July 11, 2025)"
 
 def format_time(seconds):
     hours, remaining = divmod(seconds, 3600)

@@ -19,7 +19,7 @@
 | **Operating System** | **Supported Versions**                                   | **Architecture** |
 |----------------------|----------------------------------------------------------|------------------|
 | **Windows**          | 11, 10, 8.1, 8                                           | 64-bit           |
-| **Linux**            | Debian 12, Ubuntu 22.04, Fedora 41, Arch Linux, OpenSUSE | 64-bit           |
+| **Linux**            | Debian 12, Ubuntu 22.04, Fedora 42, Arch Linux, OpenSUSE | 64-bit           |
 | **macOS**            | 15, 14, 13, 12, 11, 10.15                                | ARM64            |
 
 ## How to Install
@@ -28,8 +28,8 @@
    Visit the [latest release page](https://github.com/VermeilChan/VAE/releases/latest).
 
 2. **Choose the Correct File:**
-   - **Windows:** `VAE-2.x.x-Windows-x64.7z`
-   - **Linux:** `VAE-2.x.x-Linux-x64.tar.xz`
+   - **Windows:** `VAE-2.x.x-Windows-x64.zip`
+   - **Linux:** `VAE-2.x.x-Linux-x64.tar.zip`
    - **macOS:** `VAE-2.x.x-macOS-ARM64.zip`
 
 3. **Extract the Archive:**  
