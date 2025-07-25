@@ -23,14 +23,14 @@ def extract_archive(archive_path, archive_count):
     archive_handler = archive_handlers.get(extension)
 
     try:
-        makedirs(uuid4().hex, exist_ok=True)
+        output_dir = uuid4().hex
+        makedirs(output_dir, exist_ok=True)
 
         with archive_handler(archive_path, 'r') as archive:
-            archive.extractall(uuid4().hex)
+            archive.extractall(output_dir)
 
         leftover_folder = 'Leftover'
-        if not path.exists(leftover_folder):
-            makedirs(leftover_folder)
+        makedirs(leftover_folder, exist_ok=True)
 
         destination_path = path.join(leftover_folder, path.basename(archive_path))
         if path.exists(destination_path):
@@ -43,17 +43,16 @@ def extract_archive(archive_path, archive_count):
             archive_count[extension] += 1
 
     except FileNotFoundError:
-        print(f"Error: File not found - {archive_path.name}")
+        print(f"Error: File not found - {archive_path}")
     except PermissionError:
-        print(f"Error: Permission denied - {archive_path.name}")
+        print(f"Error: Permission denied - {archive_path}")
     except (EOFError, ValueError) as archive_error:
-        print(f"Error: Corrupt or unsupported archive - {archive_path.name}: {archive_error}")
+        print(f"Error: Corrupt or unsupported archive - {archive_path}: {archive_error}")
     except Exception as error:
-        print(f"Unexpected error processing {archive_path.name}: {str(error)}")
+        print(f"Unexpected error processing {archive_path}: {str(error)}")
 
 def process_archives():
     archives = []
-
     archive_extensions = {extension[1:] for extension in archive_handlers.keys()}
 
     for root, directories, files in walk('.'):
@@ -67,26 +66,21 @@ def process_archives():
 def main():
     start_time = time()
 
+    archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0}
     archives = process_archives()
     if not archives:
         print("No archives found.")
-        return
-
-    archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0,}
-
-    for archive in archives:
-        extract_archive(archive, archive_count)
+    else:
+        for archive in archives:
+            extract_archive(archive, archive_count)
 
     print("Removing empty directories...")
     remove_empty_directories('.')
 
-    if any(archive_count.values()):
-        print("\nSummary:")
-        for extension, count in archive_count.items():
-            if count > 0:
-                print(f"Total {extension} files processed: {count}")
+    print("\nSummary:")
+    for extension, count in archive_count.items():
+        print(f"Total {extension} files processed: {count}")
 
-        elapsed_time = time() - start_time
-        formatted_time = format_time(elapsed_time)
-
-        print(f"Total time taken: {formatted_time}\n")
+    elapsed_time = time() - start_time
+    formatted_time = format_time(elapsed_time)
+    print(f"Total time taken: {formatted_time}\n")

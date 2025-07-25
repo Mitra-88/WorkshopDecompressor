@@ -69,6 +69,7 @@ def move_files_to_leftover(files, leftover_dir):
 
 def main():
     start_time = time()
+    addon_formats_count = {".bin": 0, ".gma": 0}
     try:
         exec_paths = get_executable_paths()
         seven_zip_path = exec_paths['7z']
@@ -76,8 +77,6 @@ def main():
 
         base_extract_dir = path.join('Extracted-Addons')
         makedirs(base_extract_dir, exist_ok=True)
-
-        addon_formats_count = {".bin": 0, ".gma": 0}
 
         print("Searching for .bin files...")
         bin_files = find_files_with_extension('.bin', '.')
@@ -110,13 +109,11 @@ def main():
     except Exception as error:
         handle_error("main execution", error)
     finally:
-        if any(addon_formats_count.values()):
-            end_time = time()
-            elapsed_time = end_time - start_time
-            formatted_time = format_time(elapsed_time)
+        end_time = time()
+        elapsed_time = end_time - start_time
+        formatted_time = format_time(elapsed_time)
 
-            print("\nSummary:")
-            for addon_format, count in addon_formats_count.items():
-                if count > 0:
-                    print(f"Total {addon_format} files processed: {count}")
-            print(f"Total time taken: {formatted_time}\n")
+        print("\nSummary:")
+        for addon_format, count in addon_formats_count.items():
+            print(f"Total {addon_format} files processed: {count}")
+        print(f"Total time taken: {formatted_time}\n")
