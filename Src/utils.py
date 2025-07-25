@@ -8,15 +8,20 @@ excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
 vae_version = f"v2.4.5 ({uuid4().hex[:7]})"
 build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d, %Y)")
 
-def format_time(seconds):
-    hours, remaining = divmod(seconds, 3600)
-    minutes, remaining = divmod(remaining, 60)
-    
+def format_time(seconds: float) -> str:
+    hours, remainder = divmod(seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+
+    parts = []
     if hours > 0:
-        return f"{hours:.0f}h {minutes:.0f}m {remaining:.3f}s"
+        parts.append(f"{int(hours)}h")
     if minutes > 0:
-        return f"{minutes:.0f}m {remaining:.3f}s"
-    return f"{remaining:.3f}s"
+        parts.append(f"{int(minutes)}m")
+
+    if secs > 0 or not parts:
+        parts.append(f"{secs:.3f}s")
+    
+    return " ".join(parts)
 
 def normalize_architecture(arch):
     return {
