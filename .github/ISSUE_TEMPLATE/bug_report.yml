@@ -42,6 +42,6 @@ body:
     id: vae-version
     attributes:
       label: What version of VAE are you using?
-      placeholder: ex. vae 2.4.4
+      placeholder: ex. vae 2.4.6
     validations:
       required: true
