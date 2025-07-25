@@ -42,12 +42,17 @@
 - **For SteamCMD Users:**  
   Copy VAE to the directory where your addons are stored (e.g., `path-to-steamcmd/steamapps/workshop/content/4000`).
 
-<img src="Screenshot.png" alt="Example" width="430" height="242">
+<img src="Src/Assets/Screenshot-1.png" alt="Example">
+
+- **For DepotDownloader Users:**  
+  Copy VAE to the directory where your addons are stored (e.g., `path-to-depotdownloader/depots/4000`).
+
+<img src="Src/Assets/Screenshot-2.png" alt="Example">
 
 - **For Other Users:**  
   Place VAE in the directory with your addon archives or folders. VAE will automatically scan the current directory and its subdirectories.
 
-<img src="Screenshot-2.png" alt="Example" width="374" height="287">
+<img src="Src/Assets/Screenshot-3.png" alt="Example">
 
 ### Step 2: Run VAE
 
