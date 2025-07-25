@@ -50,10 +50,10 @@ jobs:
       - name: Move Bin Folder and Remove Gmad And 7-zip from Windows/macOS
         run: |
           cp -r Src/Bin dist/
-          rm -f dist/VAE/Bin/Windows/fastgmad.exe
-          rm -f dist/VAE/Bin/Windows/7z.exe
-          rm -f dist/VAE/Bin/Darwin/fastgmad
-          rm -f dist/VAE/Bin/Darwin/7z
+          rm -f dist/Bin/Windows/fastgmad.exe
+          rm -f dist/Bin/Windows/7z.exe
+          rm -f dist/Bin/Darwin/fastgmad
+          rm -f dist/Bin/Darwin/7z
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.2

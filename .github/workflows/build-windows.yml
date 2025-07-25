@@ -50,10 +50,10 @@ jobs:
       - name: Move Bin Folder and Remove Gmad And 7-zip from Linux/macOS
         run: |
           Copy-Item -Path "Src/Bin" -Destination "dist" -Recurse -Force
-          Remove-Item -Path 'dist/VAE/Bin/Linux/fastgmad' -Force
-          Remove-Item -Path 'dist/VAE/Bin/Darwin/fastgmad' -Force
-          Remove-Item -Path 'dist/VAE/Bin/Linux/7z' -Force
-          Remove-Item -Path 'dist/VAE/Bin/Darwin/7z' -Force
+          Remove-Item -Path 'dist/Bin/Linux/fastgmad' -Force
+          Remove-Item -Path 'dist/Bin/Darwin/fastgmad' -Force
+          Remove-Item -Path 'dist/Bin/Linux/7z' -Force
+          Remove-Item -Path 'dist/Bin/Darwin/7z' -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.2

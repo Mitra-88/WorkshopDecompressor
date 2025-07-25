@@ -50,10 +50,10 @@ jobs:
       - name: Move Bin Folder and Remove Gmad And 7-zip from Windows/Linux
         run: |
           cp -r Src/Bin dist/
-          rm -r dist/VAE/Bin/Windows/fastgmad.exe
-          rm -f dist/VAE/Bin/Windows/7z.exe
-          rm -f dist/VAE/Bin/Linux/fastgmad
-          rm -f dist/VAE/Bin/Linux/7z
+          rm -r dist/Bin/Windows/fastgmad.exe
+          rm -f dist/Bin/Windows/7z.exe
+          rm -f dist/Bin/Linux/fastgmad
+          rm -f dist/Bin/Linux/7z
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4.6.2
