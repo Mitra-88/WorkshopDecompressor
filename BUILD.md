@@ -18,10 +18,8 @@ VAE supports the following platforms:
 | Operating System | Supported Versions                                       | Architecture |
 |------------------|----------------------------------------------------------|--------------|
 | Windows          | 11, 10, 8.1, 8                                           | 64-bit       |
-| Linux            | Debian 12, Ubuntu 22.04, Fedora 41, Arch Linux, OpenSUSE | 64-bit       |
+| Linux            | Debian 12, Ubuntu 22.04, Fedora 42, Arch Linux, OpenSUSE | 64-bit       |
 | macOS            | macOS 15, 14, 13, 12, 11, 10.15                          | ARM64        |
-
-_Windows 7 is technically supported, but you need PyInstaller 4.10._
 
 # Getting the Source Code
 
