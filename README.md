@@ -29,7 +29,7 @@
 
 2. **Choose the Correct File:**
    - **Windows:** `VAE-2.x.x-Windows-x64.zip`
-   - **Linux:** `VAE-2.x.x-Linux-x64.tar.zip`
+   - **Linux:** `VAE-2.x.x-Linux-x64.zip`
    - **macOS:** `VAE-2.x.x-macOS-ARM64.zip`
 
 3. **Extract the Archive:**  
