@@ -1,3 +1,4 @@
+from logging import getLogger, basicConfig, INFO
 from time import time
 from uuid import uuid4
 from shutil import move
@@ -5,6 +6,9 @@ from subprocess import run, DEVNULL
 from concurrent.futures import ThreadPoolExecutor
 from os import path, scandir, rename, makedirs, cpu_count
 from utils import format_time, get_executable_paths, unique_name, handle_error, excluded_directories, remove_empty_directories
+
+basicConfig(level=INFO, format="%(asctime)s %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+logger = getLogger("vae_main")
 
 def find_files_with_extension(extension, start_dir):
     files = []
@@ -33,7 +37,7 @@ def add_extension_to_files_without_format(start_dir):
         handle_error(start_dir, error)
 
 def extract_bin_file(bin_file, seven_zip_path, addon_formats_count):
-    print(f"Extracting {bin_file}...")
+    logger.info("Extracting %s...", bin_file)
     try:
         extract_directory = path.join(path.dirname(bin_file), uuid4().hex)
         run([seven_zip_path, 'x', bin_file, '-o' + extract_directory],
@@ -46,7 +50,7 @@ def extract_gma_file(gma_file, fastgmad_path, addon_formats_count):
     addon_folder = path.join('Extracted-Addons', uuid4().hex)
     try:
         makedirs(addon_folder, exist_ok=True)
-        print(f"Extracting {gma_file} to {addon_folder}...")
+        logger.info("Extracting %s to %s...", gma_file, addon_folder)
         run([fastgmad_path, 'extract', '-file', gma_file, '-out', addon_folder],
             stdout=DEVNULL, stderr=DEVNULL)
         addon_formats_count[".gma"] += 1
@@ -78,33 +82,33 @@ def main():
         base_extract_dir = path.join('Extracted-Addons')
         makedirs(base_extract_dir, exist_ok=True)
 
-        print("Searching for .bin files...")
+        logger.info("Searching for .bin files...")
         bin_files = find_files_with_extension('.bin', '.')
         if bin_files:
             workers = max(1, cpu_count())
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 executor.map(lambda f: extract_bin_file(f, seven_zip_path, addon_formats_count), bin_files)
-            print(f"Found {len(bin_files)} .bin files.")
+            logger.info("Found %d .bin files.", len(bin_files))
         else:
-            print("No .bin files found.")
+            logger.warning("No .bin files found.")
 
-        print("Adding .gma extension to files without extensions...")
+        logger.info("Adding .gma extension to files without extensions...")
         add_extension_to_files_without_format('.')
 
-        print("Searching for .gma files...")
+        logger.info("Searching for .gma files...")
         gma_files = find_files_with_extension('.gma', '.')
         if gma_files:
             workers = max(1, cpu_count())
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 executor.map(lambda f: extract_gma_file(f, fastgmad_path, addon_formats_count), gma_files)
-            print(f"Found {len(gma_files)} .gma files.")
+            logger.info("Found %d .gma files.", len(gma_files))
         else:
-            print("No .gma files found.")
+            logger.warning("No .gma files found.")
 
-        print("Moving leftover files...")
+        logger.info("Moving leftover files...")
         move_files_to_leftover(bin_files + gma_files, 'Leftover')
 
-        print("Removing empty directories...")
+        logger.info("Removing empty directories...")
         remove_empty_directories('.')
     except Exception as error:
         handle_error("main execution", error)
@@ -113,7 +117,7 @@ def main():
         elapsed_time = end_time - start_time
         formatted_time = format_time(elapsed_time)
 
-        print("\nSummary:")
+        logger.info("Summary:")
         for addon_format, count in addon_formats_count.items():
-            print(f"Total {addon_format} files processed: {count}")
-        print(f"Total time taken: {formatted_time}\n")
+            logger.info("Total %s files processed: %d", addon_format, count)
+        logger.info("Total time taken: %s", formatted_time)

@@ -6,7 +6,11 @@ from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
 from os import path, makedirs, walk
+from logging import getLogger, basicConfig, INFO
 from utils import format_time, unique_name, excluded_directories, remove_empty_directories
+
+basicConfig(level=INFO, format="%(asctime)s %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+logger = getLogger("archive_processor")
 
 archive_handlers = {
     ".zip": ZipFile,
@@ -37,19 +41,19 @@ def extract_archive(archive_path, archive_count):
             destination_path = unique_name(destination_path)
 
         move(archive_path, destination_path)
-        print(f"Processed and moved: {archive_path}")
+        logger.info("Processed and moved: %s", archive_path)
         
         if extension in archive_count:
             archive_count[extension] += 1
 
     except FileNotFoundError:
-        print(f"Error: File not found - {archive_path}")
+        logger.error("Error: File not found - %s", archive_path)
     except PermissionError:
-        print(f"Error: Permission denied - {archive_path}")
+        logger.error("Error: Permission denied - %s", archive_path)
     except (EOFError, ValueError) as archive_error:
-        print(f"Error: Corrupt or unsupported archive - {archive_path}: {archive_error}")
+        logger.error("Error: Corrupt or unsupported archive - %s: %s", archive_path, archive_error)
     except Exception as error:
-        print(f"Unexpected error processing {archive_path}: {str(error)}")
+        logger.error("Unexpected error processing %s: %s", archive_path, str(error))
 
 def process_archives():
     archives = []
@@ -69,18 +73,21 @@ def main():
     archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0}
     archives = process_archives()
     if not archives:
-        print("No archives found.")
+        logger.warning("No archives found.")
     else:
         for archive in archives:
             extract_archive(archive, archive_count)
 
-    print("Removing empty directories...")
+    logger.info("Removing empty directories...")
     remove_empty_directories('.')
 
-    print("\nSummary:")
+    logger.info("Summary:")
     for extension, count in archive_count.items():
-        print(f"Total {extension} files processed: {count}")
+        logger.info("Total %s files processed: %d", extension, count)
 
     elapsed_time = time() - start_time
     formatted_time = format_time(elapsed_time)
-    print(f"Total time taken: {formatted_time}\n")
+    logger.info("Total time taken: %s", formatted_time)
+
+if __name__ == "__main__":
+    main()
