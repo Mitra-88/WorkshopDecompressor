@@ -4,7 +4,7 @@ from datetime import datetime
 from os import path, rmdir, listdir, scandir
 from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
 
-basicConfig(level=INFO, format="%(asctime)s %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+basicConfig(level=INFO, format="[%(asctime)s %(levelname)s]: %(message)s", datefmt="%H:%M:%S")
 logger = getLogger("vae_utils")
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}

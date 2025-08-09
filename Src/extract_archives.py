@@ -9,7 +9,7 @@ from os import path, makedirs, walk
 from logging import getLogger, basicConfig, INFO
 from utils import format_time, unique_name, excluded_directories, remove_empty_directories
 
-basicConfig(level=INFO, format="%(asctime)s %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+basicConfig(level=INFO, format="[%(asctime)s %(levelname)s]: %(message)s", datefmt="%H:%M:%S")
 logger = getLogger("archive_processor")
 
 archive_handlers = {

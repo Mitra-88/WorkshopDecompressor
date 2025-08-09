@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from os import path, scandir, rename, makedirs, cpu_count
 from utils import format_time, get_executable_paths, unique_name, handle_error, excluded_directories, remove_empty_directories
 
-basicConfig(level=INFO, format="%(asctime)s %(levelname)s: %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+basicConfig(level=INFO, format="[%(asctime)s %(levelname)s]: %(message)s", datefmt="%H:%M:%S")
 logger = getLogger("vae_main")
 
 def find_files_with_extension(extension, start_dir):
