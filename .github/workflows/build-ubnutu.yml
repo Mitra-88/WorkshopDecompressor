@@ -7,7 +7,7 @@ permissions:
 on:
   push:
     branches:
-      - beta
+      - master
     paths:
       - '.github/workflows/**'
       - 'Src/**'
@@ -19,18 +19,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5.6.0
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.10.18'
+          python-version: '3.12.10'
           architecture: 'x64'
           cache: 'pip'
 
       - name: Get Shortened Commit SHA
         id: shorten_commit_sha
-        uses: iendeavor/shorten-commit-sha@v2.0.4
+        uses: iendeavor/shorten-commit-sha@v2.0.5
         with:
           length: 7
 
@@ -56,8 +56,8 @@ jobs:
           rm -f dist/Bin/Darwin/7z
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v5
         with:
-          name: VAE-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-Unknow-Linux-x64
+          name: VAE-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-Linux-x64
           path: dist
           compression-level: 9
