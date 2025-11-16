@@ -45,7 +45,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --noconfirm --onefile --console --icon "Src/Icon/VAE.ico" --name "VAE" --clean --optimize "2" --version-file "version.txt" --add-data "Src/extract_addons.py;." --add-data "Src/extract_archives.py;." --add-data "Src/utils.py;."  "Src/cli.py"
+          pyinstaller --noconfirm --onefile --console --icon "Src/Icon/WorkshopDecompressor.ico" --name "Workshop Decompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/extract_addons.py;." --add-data "Src/extract_archives.py;." --add-data "Src/utils.py;."  "Src/cli.py"
 
       - name: Move Bin Folder and Remove Gmad And 7-zip from Linux/macOS
         run: |
