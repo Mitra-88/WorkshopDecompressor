@@ -57,7 +57,7 @@ def main():
 
     bin_files = find_files_with_extension('.bin', '.')
     if bin_files:
-        workers = max(1, cpu_count())
+        workers = max(1, cpu_count() - 2)
         with ThreadPoolExecutor(max_workers=workers) as executor:
             executor.map(lambda f: extract_bin_file(f, seven_zip_path, addon_formats_count), bin_files)
 
@@ -65,7 +65,7 @@ def main():
 
     gma_files = find_files_with_extension('.gma', '.')
     if gma_files:
-        workers = max(1, cpu_count())
+        workers = max(1, cpu_count() - 2)
         with ThreadPoolExecutor(max_workers=workers) as executor:
             executor.map(lambda f: extract_gma_file(f, fastgmad_path, addon_formats_count), gma_files)
 
