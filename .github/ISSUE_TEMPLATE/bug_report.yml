@@ -7,7 +7,7 @@ body:
       value: |
         Thanks for taking the time to fill out this bug report!
         
-        Before continuing to make the issue, please make sure there are no similar issues on [the issue tracker](https://github.com/VermeilChan/VAE/issues). If there are, consider contributing your information there instead!
+        Before continuing to make the issue, please make sure there are no similar issues on [the issue tracker](https://github.com/Mitra-88/WorkshopDecompressor/issues). If there are, consider contributing your information there instead!
   - type: textarea
     id: what-happened
     attributes:
@@ -41,7 +41,7 @@ body:
   - type: input
     id: vae-version
     attributes:
-      label: What version of VAE are you using?
-      placeholder: ex. vae 2.4.6
+      label: What version of WorkshopDecompressor are you using?
+      placeholder: ex. WorkshopDecompressor 2.5.0
     validations:
       required: true
