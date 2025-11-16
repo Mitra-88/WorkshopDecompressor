@@ -1,82 +1,74 @@
-# Vermeil's Addon Extractor (VAE)
+# Workshop Decompressor
 
-**VAE** is a command-line tool for players of Garry's Mod who need to extract content from addon files. This utility supports both modern `.gma` addons and legacy `.bin` addons, a tool for players who download addons from sources such as SteamCMD, third-party programs, websites, or for those using cracked versions of the game.
+**Workshop Decompressor** is a command-line tool for players of Garry's Mod who need to extract content from addon files. This utility supports both modern `.gma` addons and legacy `.bin` addons, a tool for players who download addons from sources such as SteamCMD, third-party programs, websites, or for those using cracked versions of the game.
 
 ## Key Features
 
-- 🖥️ Cross-Platform: Works on Windows, macOS, and Linux.
-- 📦 Addon Extraction: Extract both modern `.gma` and legacy `.bin` addon formats.
-- 🔄 Archive Extraction: Supports archive formats (`.zip`, `.rar`, `.7z`, `.tar`, `.tar.gz`, `.tar.xz` and `.tar.bz2`).
-- ⚡ Multithreading: Utilizes concurrent processing to speed up extraction.
-- 🛠️ Easy to Use: A simple command-line interface.
-- 🔄 GWTool Replacement: Drop-in replacement for GWTool.
+- Cross-Platform: Works on Windows, macOS, and Linux.
+- Addon Extraction: Extract both modern `.gma` and legacy `.bin` addon formats.
+- Archive Extraction: Supports archive formats (`.zip`, `.rar`, `.7z`, `.tar`, `.tar.gz`, `.tar.xz` and `.tar.bz2`).
+- Multithreading: Utilizes concurrent processing to speed up extraction.
+- Easy to Use: A simple command-line interface.
+- Drop-in replacement for GWTool.
 
 ## System Requirements
 
-- **RAM:** 20 MB
-- **Disk Space:** 40 MB
+**RAM Usage:** 30MB<br>
+**Disk Space:** 40MB
 
-| **Operating System** | **Supported Versions**                                   | **Architecture** |
-|----------------------|----------------------------------------------------------|------------------|
-| **Windows**          | 11, 10, 8.1, 8                                           | 64-bit           |
-| **Linux**            | Debian 12, Ubuntu 22.04, Fedora 42, Arch Linux, OpenSUSE | 64-bit           |
-| **macOS**            | 15, 14, 13, 12, 11, 10.15                                | ARM64            |
+| Operating System | Supported Versions                                         | Architecture |
+|------------------|------------------------------------------------------------|--------------|
+| Windows          | 11, 10 (1809 or later)                                     | 64-Bit       |
+| GNU/Linux        | Debian 13, Ubuntu 24.04.3, Fedora 43, Arch Linux, OpenSUSE | 64-Bit       |
+| macOS            | 15, 14, 13, 12                                             | ARM64        |
 
 ## How to Install
 
-1. **Download the Latest Release:**  
-   Visit the [latest release page](https://github.com/VermeilChan/VAE/releases/latest).
+Download the Latest Release:
+   Visit the [latest release page](https://github.com/Mitra-88/WorkshopDecompressor/releases/latest).
 
-2. **Choose the Correct File:**
-   - **Windows:** `VAE-2.x.x-Windows-x64.zip`
-   - **Linux:** `VAE-2.x.x-Linux-x64.zip`
-   - **macOS:** `VAE-2.x.x-macOS-ARM64.zip`
+## How to Use Workshop Decompressor
 
-3. **Extract the Archive:**  
-   Extract the downloaded file to get the VAE files.
+### Step 1: Place Workshop Decompressor in Your Addons Folder
 
-## How to Use VAE
-
-### Step 1: Place VAE in Your Addons Folder
-
-- **For SteamCMD Users:**  
-  Copy VAE to the directory where your addons are stored (e.g., `path-to-steamcmd/steamapps/workshop/content/4000`).
+- For SteamCMD Users:
+  Copy Workshop Decompressor to the directory where your addons are stored (e.g., `path-to-steamcmd/steamapps/workshop/content/4000`).
 
 <img src="Src/Assets/Screenshot-1.png" alt="Example">
 
-- **For DepotDownloader Users:**  
-  Copy VAE to the directory where your addons are stored (e.g., `path-to-depotdownloader/depots/4000`).
+- For DepotDownloader Users:
+  Copy Workshop Decompressor to the directory where your addons are stored (e.g., `path-to-depotdownloader/depots/4000`).
 
 <img src="Src/Assets/Screenshot-2.png" alt="Example">
 
-- **For Other Users:**  
-  Place VAE in the directory with your addon archives or folders. VAE will automatically scan the current directory and its subdirectories.
+- For Other Users: 
+  Place Workshop Decompressor in the directory with your addon archives or folders. Workshop Decompressor will automatically scan the current directory and its subdirectories.
 
 <img src="Src/Assets/Screenshot-3.png" alt="Example">
 
-### Step 2: Run VAE
+### Step 2: Run Workshop Decompressor
 
 When you start the program, you will see two options:
 
 #### Option 1: Extract Addons
 
-- **What It Does:**  
+- What It Does:
   Scans the current directory and its subdirectories for `.gma` and `.bin` files.
   
-- **After Extraction:**  
+- After Extraction:
   The extracted files are saved in the `Extracted-Addons` folder. Simply copy these folders into your Garry's Mod addon directory.
 
 #### Option 2: Extract Archives
 
-- **What It Does:**  
+- What It Does:
   Searches for archive files (like `.zip`, `.rar`, `.7z`, etc.) and extracts them.
   
-- **After Extraction:**  
+- After Extraction:
   A folder named `Leftover` will be created. This folder contains the original `.gma`, `.bin`, and archive files. You can delete it later to free up space.
 
-## Building VAE from Source
+## Building Workshop Decompressor from Source
 
-Please refer to the [build instructions](BUILD.md) for details on building VAE from source.
+Please refer to the [build instructions](BUILD.md) for details on building Workshop Decompressor from source.
 
 ## Contributing
 
@@ -88,8 +80,8 @@ This project is licensed under the [GNU General Public License v3.0](LICENSE).
 
 ## Credits
 
-- **[PyInstaller](https://www.pyinstaller.org/):** For creating standalone executables.
-- **[Py7zr](https://pypi.org/project/py7zr/):** For 7z file extraction.
-- **[RarFile](https://pypi.org/project/rarfile/):** For extracting rar files.
-- **[FastGMAD](https://github.com/WilliamVenner/fastgmad):** Fast reimplementation of gmad (forked).
-- **[7-zip](https://www.7-zip.org/):** For extracting `.bin` files.
+- [PyInstaller](https://www.pyinstaller.org/): For creating standalone executables.
+- [Py7zr](https://pypi.org/project/py7zr/): For 7z file extraction.
+- [RarFile](https://pypi.org/project/rarfile/): For extracting rar files.
+- [FastGMAD](https://github.com/WilliamVenner/fastgmad): Fast reimplementation of gmad (forked).
+- [7-zip](https://www.7-zip.org/): For extracting `.bin` files.
