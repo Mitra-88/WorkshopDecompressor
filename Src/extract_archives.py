@@ -6,7 +6,7 @@ from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
 from os import path, makedirs, walk
-from utils import format_time, unique_name, excluded_directories, delete_empty_dirs
+from utils import format_time, unique_name, excluded_directories, remove_empty_directories
 
 archive_handlers = {
     ".zip": ZipFile,
@@ -86,7 +86,7 @@ def main():
         print(">>> No archive files found to process.")
 
     print(">>> Cleaning up empty directories...")
-    deleted_dirs_count = delete_empty_dirs('.')
+    deleted_dirs_count = remove_empty_directories('.')
     print(f">>> Removed {deleted_dirs_count} empty directories")
 
     elapsed_time = time() - start_time

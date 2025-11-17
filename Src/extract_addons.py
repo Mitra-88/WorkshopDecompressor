@@ -4,7 +4,7 @@ from shutil import move
 from subprocess import run, DEVNULL
 from concurrent.futures import ThreadPoolExecutor
 from os import path, scandir, rename, makedirs, cpu_count
-from utils import format_time, get_executable_paths, unique_name, excluded_directories, delete_empty_dirs
+from utils import format_time, get_executable_paths, unique_name, excluded_directories, remove_empty_directories
 
 def find_files_with_extension(extension, start_dir):
     files = []
@@ -97,7 +97,7 @@ def main():
     print(f">>> Moved {moved_count} files to Leftover folder")
 
     print(">>> Cleaning up empty directories...")
-    deleted_dirs_count = delete_empty_dirs('.')
+    deleted_dirs_count = remove_empty_directories('.')
     print(f">>> Removed {deleted_dirs_count} empty directories")
 
     end_time = time()

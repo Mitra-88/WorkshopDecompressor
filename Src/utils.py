@@ -1,7 +1,7 @@
-import os
 import platform
 from uuid import uuid4
 from datetime import datetime
+from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
@@ -63,32 +63,31 @@ def get_executable_paths():
         'Darwin': {'7z': '7z', 'fastgmad': 'fastgmad'}
     }
     
-    return {exe: os.path.join(base_dir, platform_name, exe_name) 
+    return {exe: path.join(base_dir, platform_name, exe_name) 
             for exe, exe_name in executables[platform_name].items()}
 
 def unique_name(file_path):
-    if not os.path.exists(file_path):
+    if not path.exists(file_path):
         return file_path
         
-    base, extension = os.path.splitext(file_path)
+    base, extension = path.splitext(file_path)
     counter = 1
     
     while True:
         new_name = f"{base}-{counter}{extension}"
-        if not os.path.exists(new_name):
+        if not path.exists(new_name):
             print(f"Detected duplicate file. Renaming to: {new_name}")
             return new_name
         counter += 1
 
-def delete_empty_dirs(root, excluded_directories=None):
-    if excluded_directories is None:
-        excluded_directories = set()
-    
-    excluded_directories = set(os.path.normpath(path) for path in excluded_directories)
-    
-    for dirpath, dirnames, _ in os.walk(root, topdown=False):
-        for dirname in dirnames:
-            full_path = os.path.join(dirpath, dirname)
-            if (not os.listdir(full_path) and 
-                os.path.normpath(full_path) not in excluded_directories):
-                os.rmdir(full_path)
+def remove_empty_directories(path, excluded=()):
+    deleted_count = 0
+    with scandir(path) as entries:
+        for entry in entries:
+            if entry.is_dir() and entry.name not in excluded:
+                deleted_count += remove_empty_directories(entry.path, excluded)
+    with scandir(path) as entries:
+        if not any(True for _ in entries):
+            rmdir(path)
+            deleted_count += 1
+    return deleted_count
