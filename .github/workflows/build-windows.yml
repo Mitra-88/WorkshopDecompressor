@@ -58,6 +58,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v5
         with:
-          name: VAE-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-Windows-x64
+          name: WorkshopDecompressor-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-Windows-x64
           path: dist
           compression-level: 9
