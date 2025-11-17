@@ -54,8 +54,11 @@ def main():
     start_time = time()
     addon_formats_count = {".bin": 0, ".gma": 0}
     
-    print(">>> Starting Workshop Decompressor...")
-    print(">>> Setting up extraction environment...")
+    print("┌───────────────────────────────────────┐")
+    print("│        Workshop Decompressor          │")
+    print("└───────────────────────────────────────┘")
+    
+    print("• Setting up environment...")
     
     exec_paths = get_executable_paths()
     seven_zip_path = exec_paths['7z']
@@ -64,58 +67,53 @@ def main():
     base_extract_dir = path.join('Extracted-Addons')
     makedirs(base_extract_dir, exist_ok=True)
 
-    print(">>> Scanning for .bin files...")
+    print("• Scanning for .bin files...")
     bin_files = find_files_with_extension('.bin', '.')
-    print(f">>> Found {len(bin_files)} .bin files to process")
+    print(f"• Found {len(bin_files)} .bin files")
     
     if bin_files:
         workers = max(1, cpu_count() - 2)
-        print(f">>> Extracting {len(bin_files)} .bin files using {workers} workers...")
+        print(f"• Extracting {len(bin_files)} files with {workers} workers...")
         with ThreadPoolExecutor(max_workers=workers) as executor:
             executor.map(lambda f: extract_bin_file(f, seven_zip_path, addon_formats_count), bin_files)
-        print(f">>> Successfully extracted {addon_formats_count['.bin']} .bin files")
+        print(f"• Extracted {addon_formats_count['.bin']} .bin files")
 
-    print(">>> Scanning for files without extensions...")
+    print("• Checking for files without extensions...")
     renamed_count = add_extension_to_files_without_format('.')
     if renamed_count > 0:
-        print(f">>> Added .gma extension to {renamed_count} files")
+        print(f"• Added .gma extension to {renamed_count} files")
 
-    print(">>> Scanning for .gma files...")
+    print("• Scanning for .gma files...")
     gma_files = find_files_with_extension('.gma', '.')
-    print(f">>> Found {len(gma_files)} .gma files to process")
+    print(f"• Found {len(gma_files)} .gma files")
     
     if gma_files:
         workers = max(1, cpu_count() - 2)
-        print(f">>> Extracting {len(gma_files)} .gma files using {workers} workers...")
+        print(f"• Extracting {len(gma_files)} files with {workers} workers...")
         with ThreadPoolExecutor(max_workers=workers) as executor:
             executor.map(lambda f: extract_gma_file(f, fastgmad_path, addon_formats_count), gma_files)
-        print(f">>> Successfully extracted {addon_formats_count['.gma']} .gma files")
+        print(f"• Extracted {addon_formats_count['.gma']} .gma files")
 
-    print(">>> Moving processed files to Leftover folder...")
+    print("• Moving processed files...")
     all_processed_files = bin_files + gma_files
     moved_count = move_files_to_leftover(all_processed_files, 'Leftover')
-    print(f">>> Moved {moved_count} files to Leftover folder")
+    print(f"• Moved {moved_count} files to Leftover")
 
-    print(">>> Cleaning up empty directories...")
+    print("• Cleaning empty directories...")
     deleted_dirs_count = remove_empty_directories('.')
-    print(f">>> Removed {deleted_dirs_count} empty directories")
+    print(f"• Removed {deleted_dirs_count} empty directories")
 
     end_time = time()
     elapsed_time = end_time - start_time
     formatted_time = format_time(elapsed_time)
 
-    print("\n" + "="*50)
-    print("EXTRACTION COMPLETE - SUMMARY")
-    print("="*50)
-    print(f"Total time: {formatted_time}")
-    print(f"Files processed:")
-    print(f"  - .bin files: {addon_formats_count['.bin']}")
-    print(f"  - .gma files: {addon_formats_count['.gma']}")
-    print(f"  - Files renamed: {renamed_count}")
-    print(f"Output location: {base_extract_dir}")
-    print(f"Leftover files: {moved_count}")
-    print("All operations completed successfully!")
-    print("="*50)
-
-if __name__ == "__main__":
-    main()
+    print("\n" + "─" * 40)
+    print("SUMMARY")
+    print("─" * 40)
+    print(f"Time: {formatted_time}")
+    print(f"• .bin files: {addon_formats_count['.bin']}")
+    print(f"• .gma files: {addon_formats_count['.gma']}")
+    print(f"• Files renamed: {renamed_count}")
+    print(f"• Output: {base_extract_dir}")
+    print(f"• Archived: {moved_count}")
+    print("─" * 40)

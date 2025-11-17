@@ -55,14 +55,17 @@ def process_archives():
 def main():
     start_time = time()
 
-    print(">>> Starting Archive Extraction Process...")
-    print(">>> Supported formats: ZIP, RAR, 7Z, TAR, GZ, XZ, BZ2")
+    print("┌────────────────────────────────────┐")
+    print("│        Archive Extractor           │")
+    print("└────────────────────────────────────┘")
+    
+    print("• Formats: ZIP, RAR, 7Z, TAR, GZ, XZ, BZ2")
     
     archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0}
     
-    print(">>> Scanning for archive files...")
+    print("• Scanning for archives...")
     archives = process_archives()
-    print(f">>> Found {len(archives)} total archive files")
+    print(f"• Found {len(archives)} total archives")
 
     found_counts = {ext: 0 for ext in archive_count.keys()}
     for archive in archives:
@@ -70,45 +73,41 @@ def main():
         if ext in found_counts:
             found_counts[ext] += 1
     
-    print(">>> Archive breakdown:")
+    print("• Breakdown:")
     for ext, count in found_counts.items():
         if count > 0:
-            print(f"    {ext.upper()}: {count} files")
+            print(f"  {ext.upper()}: {count}")
 
     if archives:
-        print(">>> Extracting archives...")
+        print("• Extracting archives...")
         for i, archive in enumerate(archives, 1):
             ext = path.splitext(archive)[1]
-            print(f">>> Progress: {i}/{len(archives)} - Extracting {path.basename(archive)}")
+            print(f"• [{i}/{len(archives)}] {path.basename(archive)}")
             extract_archive(archive, archive_count)
-        print(">>> Extraction completed successfully!")
+        print("• Extraction complete")
     else:
-        print(">>> No archive files found to process.")
+        print("• No archives found")
 
-    print(">>> Cleaning up empty directories...")
+    print("• Cleaning up...")
     deleted_dirs_count = remove_empty_directories('.')
-    print(f">>> Removed {deleted_dirs_count} empty directories")
+    print(f"• Removed {deleted_dirs_count} empty directories")
 
     elapsed_time = time() - start_time
     formatted_time = format_time(elapsed_time)
 
-    print("\n" + "="*60)
-    print("ARCHIVE EXTRACTION COMPLETE - SUMMARY")
-    print("="*60)
-    print(f"Total processing time: {formatted_time}")
-    print(f"Total archives processed: {len(archives)}")
-    print("\nDetailed breakdown:")
+    print("\n" + "─" * 45)
+    print("COMPLETE")
+    print("─" * 45)
+    print(f"Time: {formatted_time}")
+    print(f"Total: {len(archives)} archives")
     
     total_processed = 0
     for ext, count in archive_count.items():
         if count > 0:
-            print(f"  {ext.upper():6} : {count:3} files")
+            print(f"• {ext.upper()}: {count}")
             total_processed += count
     
-    print(f"\nSuccessfully processed: {total_processed} files")
-    print(f"Moved to Leftover folder: {len(archives)} files")
-    print(f"Empty directories removed: {deleted_dirs_count}")
-    print("="*60)
-
-if __name__ == "__main__":
-    main()
+    print(f"• Processed: {total_processed} files")
+    print(f"• Archived: {len(archives)} files")
+    print(f"• Directories cleaned: {deleted_dirs_count}")
+    print("─" * 45)
