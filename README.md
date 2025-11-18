@@ -29,22 +29,22 @@ Download the Latest Release:
 
 ## How to Use Workshop Decompressor
 
-### Step 1: Place Workshop Decompressor in Your Addons Folder
+### **Step 1: Put the program where your addons are**
 
-- For SteamCMD Users:
-  Copy Workshop Decompressor to the directory where your addons are stored (e.g., `path-to-steamcmd/steamapps/workshop/content/4000`).
+**If you use SteamCMD:**
+Drop the Workshop Decompressor EXE into this folder:
+`steamcmd/steamapps/workshop/content/4000`
+That’s where all your downloaded GMod addons live.
 
 <img src="Src/Assets/Screenshot-1.png" alt="Example">
 
-- For DepotDownloader Users:
-  Copy Workshop Decompressor to the directory where your addons are stored (e.g., `path-to-depotdownloader/depots/4000`).
+**If you use anything else (web downloads, random folders, cracked GMod, etc.):**
+Put Workshop Decompressor in the same folder where your `.gma`, `.bin`, or archive files are.
+
+That’s it.
+The program scans **the folder it’s in** and **every subfolder**, automatically.
 
 <img src="Src/Assets/Screenshot-2.png" alt="Example">
-
-- For Other Users: 
-  Place Workshop Decompressor in the directory with your addon archives or folders. Workshop Decompressor will automatically scan the current directory and its subdirectories.
-
-<img src="Src/Assets/Screenshot-3.png" alt="Example">
 
 ### Step 2: Run Workshop Decompressor
 
