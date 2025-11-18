@@ -18,6 +18,25 @@ archive_handlers = {
     ".bz2": TarFile,
 }
 
+def warn_user():
+    lines = [
+        "⚠️  WARNING!",
+        "Please close ALL programs using:",
+        "• .gma addon files",
+        "• .bin files",
+        "If these files are in use, errors may occur.",
+        "These errors are NOT handled by this script."
+    ]
+    width = max(len(line) for line in lines) + 4
+    print("┌" + "─" * width + "┐")
+    for line in lines:
+        print("│ " + line.ljust(width - 2) + " │")
+    print("└" + "─" * width + "┘")
+
+    confirmation = ""
+    while confirmation.lower() != "i understand":
+        confirmation = input("Type 'I understand' to continue: ").strip()
+
 def extract_archive(archive_path, archive_count):
     extension = path.splitext(archive_path)[1]
     archive_handler = archive_handlers.get(extension)
@@ -53,6 +72,7 @@ def process_archives():
     return archives
 
 def main():
+    warn_user()
     start_time = time()
 
     print("┌────────────────────────────────────┐")

@@ -52,10 +52,30 @@ def move_files_to_leftover(files, leftover_dir):
         moved_count += 1
     return moved_count
 
+def warn_user():
+    lines = [
+        "⚠️  WARNING!",
+        "Please close ALL programs using:",
+        "• .gma addon files",
+        "• .bin files",
+        "If these files are in use, errors may occur.",
+        "These errors are NOT handled by this script."
+    ]
+    width = max(len(line) for line in lines) + 4
+    print("┌" + "─" * width + "┐")
+    for line in lines:
+        print("│ " + line.ljust(width - 2) + " │")
+    print("└" + "─" * width + "┘")
+
+    confirmation = ""
+    while confirmation.lower() != "i understand":
+        confirmation = input("Type 'I understand' to continue: ").strip()
+
 def main():
+    warn_user()
     start_time = time()
     addon_formats_count = {".bin": 0, ".gma": 0}
-    
+
     print("┌───────────────────────────────────────┐")
     print("│        Workshop Decompressor          │")
     print("└───────────────────────────────────────┘")
@@ -94,7 +114,7 @@ def main():
         print(f"• Extracting {len(gma_files)} files with {workers} workers...")
         with ThreadPoolExecutor(max_workers=workers) as executor:
             executor.map(extract_gma_file, gma_files, [fastgmad_path]*len(gma_files), [addon_formats_count]*len(gma_files))
-        print(f"•Extracted {addon_formats_count['.gma']} .gma files")
+        print(f"• Extracted {addon_formats_count['.gma']} .gma files")
 
     print("• Moving processed files...")
     all_processed_files = bin_files + gma_files
