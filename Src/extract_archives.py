@@ -1,5 +1,4 @@
 from time import time
-from uuid import uuid4
 from shutil import move
 from zipfile import ZipFile
 from rarfile import RarFile
@@ -41,7 +40,8 @@ def extract_archive(archive_path, archive_count):
     extension = path.splitext(archive_path)[1]
     archive_handler = archive_handlers.get(extension)
 
-    output_dir = uuid4().hex
+    base_output_dir = path.splitext(path.basename(archive_path))[0]
+    output_dir = unique_name(base_output_dir)
     makedirs(output_dir, exist_ok=True)
 
     with archive_handler(archive_path, 'r') as archive:
@@ -53,11 +53,12 @@ def extract_archive(archive_path, archive_count):
     destination_path = path.join(leftover_folder, path.basename(archive_path))
     if path.exists(destination_path):
         destination_path = unique_name(destination_path)
-
     move(archive_path, destination_path)
-    
+
     if extension in archive_count:
         archive_count[extension] += 1
+    else:
+        archive_count[extension] = 1
 
 def process_archives():
     archives = []
