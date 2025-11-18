@@ -1,23 +1,23 @@
 import sys
 from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
-from utils import get_system_info, workshopdecompressor_version, build_date
+from utils import get_system_info, app_version, build_date
 from py7zr import __version__ as py7zr_version
 from rarfile import __version__ as rarfile_version
 from PyInstaller import __version__ as pyinstaller_version
 
 def display_info():
     print(
-        f"\n{'=' * 45}\n"
-        f"Workshop Decompressor {workshopdecompressor_version}.\n"
-        f"{'=' * 45}\n"
+        f"{'=' * 40}\n"
+        f"Workshop Decompressor {app_version}.\n"
+        f"{'=' * 40}\n"
     )
 
 def display_build_info():
     print(
-        f"\nBuild Information:\n"
-        f"{'-' * 75}\n"
-        f"Program: Workshop Decompressor {workshopdecompressor_version}\n"
+        f"Build Information:\n"
+        f"{'=' * 75}\n"
+        f"Program: Workshop Decompressor {app_version}\n"
         f"Build Date: {build_date}\n"
         f"Operating System: {get_system_info()}\n"
         f"Dependencies:\n"
@@ -25,7 +25,7 @@ def display_build_info():
         f"  • Py7zr: {py7zr_version}\n"
         f"  • RarFile: {rarfile_version}\n"
         f"  • 7-zip: 25.01\n"
-        f"{'-' * 75}\n"
+        f"{'=' * 75}"
     )
 
 def display_menu():
@@ -49,15 +49,18 @@ def display_help():
     )
 
 def handle_choice(user_input):
+    def invalid_choice():
+        print("Invalid choice: Please select 1-5")
+
     options = {
         "1": extract_addons,
         "2": extract_archives,
         "3": display_help,
         "4": display_build_info,
-        "5": lambda: sys.exit(0)
+        "5": sys.exit
     }
     
-    action = options.get(user_input, lambda: print("Invalid choice: Please select 1-5"))
+    action = options.get(user_input, invalid_choice)
     action()
 
 def main():
