@@ -13,27 +13,23 @@
 
 # Platforms
 
-VAE supports the following platforms:
-
-| Operating System | Supported Versions                                       | Architecture |
-|------------------|----------------------------------------------------------|--------------|
-| Windows          | 11, 10, 8.1, 8                                           | 64-bit       |
-| Linux            | Debian 12, Ubuntu 22.04, Fedora 41, Arch Linux, OpenSUSE | 64-bit       |
-| macOS            | macOS 15, 14, 13, 12, 11, 10.15                          | ARM64        |
-
-_Windows 7 is technically supported, but you need PyInstaller 4.10._
+| Operating System | Supported Versions                                         | Architecture |
+|------------------|------------------------------------------------------------|--------------|
+| Windows          | 11, 10 (1809 or later)                                     | 64-Bit       |
+| GNU/Linux        | Debian 13, Ubuntu 24.04.3, Fedora 43, Arch Linux, OpenSUSE | 64-Bit       |
+| macOS            | 15, 14, 13, 12                                             | ARM64        |
 
 # Getting the Source Code
 
-- Download the zip archive from the [latest release](https://github.com/VermeilChan/VAE/releases/latest). `Source code (zip)`
+- Download the zip archive from the [latest release](https://github.com/Mitra-88/Workshop Decompressor/releases/latest). `Source code (zip)`
 
 # Dependencies
 
-You need the following to compile VAE:
+You need the following to compile Workshop Decompressor:
 
-- [Python](https://www.python.org/) 3.10+
-- [PyInstaller](https://www.pyinstaller.org/) 6.12.0+
-- [Py7zr](https://pypi.org/project/py7zr/) 0.22.0+
+- [Python](https://www.python.org/) 3.12+
+- [PyInstaller](https://www.pyinstaller.org/) 6.16.0+
+- [Py7zr](https://pypi.org/project/py7zr/) 1.0.0+
 - [RarFile](https://pypi.org/project/rarfile/) 4.2+
 
 ## Linux Dependencies
@@ -61,22 +57,22 @@ sudo zypper install -y python3 python3-pip python3-virtualenv
 
 In Command Prompt:
 ```sh
-cd VAE
+cd WorkshopDecompressor
 py -m venv .venv
 .venv/Scripts/activate
 pip install -r requirements.txt
-pyinstaller --noconfirm --onedir --console --icon "Src/Icon/VAE.ico" --name "VAE" --clean --optimize "2" --version-file "version.txt" --add-data "Src/extract_addons.py;." --add-data "Src/extract_archives.py;." --add-data "Src/utils.py;." --add-data "Src/Bin;Bin/"  "Src/cli.py"
-Copy-Item -Path "Src/Bin" -Destination "dist/VAE" -Recurse
+pyinstaller --noconfirm --onefile --console --icon "Src/Icon/WorkshopDecompressor.ico" --name "Workshop Decompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/extract_addons.py;." --add-data "Src/extract_archives.py;." --add-data "Src/utils.py;."  "Src/cli.py"
+Copy-Item -Path "Src/Bin" -Destination "dist" -Recurse -Force
 ```
 
 ## Linux/macOS
 
 In Terminal:
 ```sh
-cd VAE
+cd WorkshopDecompressor
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pyinstaller --noconfirm --onedir --console --name "VAE" --strip --clean --optimize "2" --add-data "Src/extract_addons.py:." --add-data "Src/extract_archives.py:." --add-data "Src/utils.py:." --add-data "Src/Bin:Bin/"  "Src/cli.py"
-cp -r Src/Bin dist/VAE
+pyinstaller --noconfirm --onefile --console --name "Workshop Decompressor" --strip --clean --optimize "2" --add-data "Src/extract_addons.py:." --add-data "Src/extract_archives.py:." --add-data "Src/utils.py:."  "Src/cli.py"
+cp -r Src/Bin dist/
 ```

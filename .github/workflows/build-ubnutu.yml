@@ -1,5 +1,9 @@
 name: Build Ubuntu
 
+permissions:
+  contents: read
+  actions: write
+
 on:
   push:
     branches:
@@ -15,18 +19,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5.6.0
+        uses: actions/setup-python@v6
         with:
-          python-version: '3.10.18'
+          python-version: '3.12.10'
           architecture: 'x64'
           cache: 'pip'
 
       - name: Get Shortened Commit SHA
         id: shorten_commit_sha
-        uses: iendeavor/shorten-commit-sha@v2.0.4
+        uses: iendeavor/shorten-commit-sha@v2.0.5
         with:
           length: 7
 
@@ -41,19 +45,19 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --noconfirm --onedir --console --name "VAE" --strip --clean --optimize "2" --add-data "Src/extract_addons.py:." --add-data "Src/extract_archives.py:." --add-data "Src/utils.py:." --add-data "Src/Bin:Bin/"  "Src/cli.py"
+          pyinstaller --noconfirm --onefile --console --name "Workshop Decompressor" --strip --clean --optimize "2" --add-data "Src/extract_addons.py:." --add-data "Src/extract_archives.py:." --add-data "Src/utils.py:."  "Src/cli.py"
 
       - name: Move Bin Folder and Remove Gmad And 7-zip from Windows/macOS
         run: |
-          mv dist/VAE/_internal/Bin dist/VAE/Bin
-          rm -f dist/VAE/Bin/Windows/fastgmad.exe
-          rm -f dist/VAE/Bin/Windows/7z.exe
-          rm -f dist/VAE/Bin/Darwin/fastgmad
-          rm -f dist/VAE/Bin/Darwin/7z
+          cp -r Src/Bin dist/
+          rm -f dist/Bin/Windows/fastgmad.exe
+          rm -f dist/Bin/Windows/7z.exe
+          rm -f dist/Bin/Darwin/fastgmad
+          rm -f dist/Bin/Darwin/7z
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v5
         with:
-          name: VAE-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-Unknow-Linux-x64
-          path: dist/VAE
+          name: WorkshopDecompressor-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-Linux-x64
+          path: dist
           compression-level: 9

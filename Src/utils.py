@@ -1,131 +1,91 @@
-from uuid import uuid4
-from os import path, rmdir, listdir, scandir
-from platform import system, architecture, win32_ver, win32_edition, freedesktop_os_release, mac_ver, machine
+import platform
+from os import scandir, rmdir, path
 
-excluded_directories = {'Bin', 'Leftover', '_internal', 'Extracted-Addons'}
+excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
-vae_version = f"v2.4.5 (3be74ee)"
-build_date = "2025-07-11 (Friday, July 11, 2025)"
+app_version = f"v2.5.0 (12d8bac)"
+build_date = "2025-11-18 (Tuesday, November 18, 2025)"
 
 def format_time(seconds):
-    hours, remaining = divmod(seconds, 3600)
-    minutes, remaining = divmod(remaining, 60)
+    h, seconds = divmod(seconds, 3600)
+    m, s = divmod(seconds, 60)
     
-    if hours > 0:
-        return f"{hours:.0f}h {minutes:.0f}m {remaining:.3f}s"
-    if minutes > 0:
-        return f"{minutes:.0f}m {remaining:.3f}s"
-    return f"{remaining:.3f}s"
+    parts = []
+    if h: parts.append(f"{h:.0f}h")
+    if m: parts.append(f"{m:.0f}m")
+    if s or not parts: parts.append(f"{s:.3f}s")
+    
+    return ' '.join(parts)
 
 def normalize_architecture(arch):
-    return {
+    mapping = {
         "x86_64": "64-Bit",
-        "64bit": "64-Bit",
+        "amd64": "AMD64",
         "arm64": "ARM64",
-    }.get(arch, arch)
-
-def get_windows_info():
-    try:
-        version = win32_ver()[0]
-        edition = win32_edition()
-        arch = normalize_architecture(architecture()[0])
-        return f"Windows {version} {edition} {arch}"
-    except Exception as error:
-        return f"Windows (Error: {error})"
-
-def get_linux_info():
-    try:
-        distro = freedesktop_os_release()
-        name = distro.get("NAME", "Linux")
-        pretty_name = distro.get("PRETTY_NAME", "")
-        version = distro.get("VERSION", "")
-        version_id = distro.get("VERSION_ID", "")
-        arch = normalize_architecture(architecture()[0])
-
-        if pretty_name:
-            return f"{pretty_name} {arch}"
-        if version:
-            return f"{version} {arch}"
-        
-        components = [name]
-        if version_id:
-            components.append(version_id)
-        return f"{' '.join(components)} {arch}"
-
-    except OSError:
-        return f"Linux {normalize_architecture(architecture()[0])}"
-    except Exception as error:
-        return f"Linux (Error: {error})"
-
-def get_macos_info():
-    try:
-        version = mac_ver()[0]
-        arch = normalize_architecture(machine())
-        return f"macOS {version} {arch}"
-    except Exception as error:
-        return f"macOS (Error: {error})"
-
-def get_os_info():
-    system_name = system()
-    handlers = {
-        "Windows": get_windows_info,
-        "Linux": get_linux_info,
-        "Darwin": get_macos_info,
+        "aarch64": "ARM64",
+        "64bit": "64-Bit",
     }
-    handler = handlers.get(system_name)
-    return handler() if handler else f"Unknown OS (System: {system_name})"
+    return mapping.get(arch.lower(), arch)
+
+def get_system_info():
+    system = platform.system()
+    arch = normalize_architecture(platform.machine())
+    if system == "Windows":
+        edition = platform.win32_edition()
+        release = platform.release()
+        version = platform.version()
+        return f"{system} {release} {edition} (Build {version}) {arch}".strip()
+    elif system == "Linux":
+        try:
+            os_release = platform.freedesktop_os_release()
+            if "PRETTY_NAME" in os_release:
+                return f"{os_release['PRETTY_NAME']} {arch}"
+            name = os_release.get("NAME", "Linux")
+            version = os_release.get("VERSION", "")
+            if name or version:
+                return f"{name} {version} {arch}".strip()
+        except OSError:
+            system_name = platform.system()
+            release = platform.release()
+            return f"{system_name} {release} {arch}"
+    elif system == "Darwin":
+        mac_version, *_ = platform.mac_ver()
+        return f"macOS {mac_version or platform.release()} {arch}"
 
 def get_executable_paths():
-    current_platform = system()
-    base_path = 'Bin'
-    platform_paths = {
+    platform_name = platform.system()
+    base_dir = 'Bin'
+    executables = {
         'Windows': {'7z': '7z.exe', 'fastgmad': 'fastgmad.exe'},
         'Linux': {'7z': '7z', 'fastgmad': 'fastgmad'},
         'Darwin': {'7z': '7z', 'fastgmad': 'fastgmad'}
     }
-
-    if current_platform not in platform_paths:
-        raise Exception(f"Unsupported platform: {current_platform}. Supported platforms are: Windows, Linux, macOS.")
-
-    executable_path = {
-        exe: path.join(base_path, current_platform, exe_name)
-        for exe, exe_name in platform_paths[current_platform].items()
-    }
-
-    for exe, exe_path in executable_path.items():
-        if not path.exists(exe_path):
-            exe_path = input(f"Could not find {exe} at {exe_path}. Please provide the full path to the {exe} executable: ").strip()
-            if not path.exists(exe_path):
-                raise FileNotFoundError(f"Provided path for {exe} does not exist: {exe_path}")
-            executable_path[exe] = exe_path
-
-    return executable_path
+    
+    return {exe: path.join(base_dir, platform_name, exe_name) 
+            for exe, exe_name in executables[platform_name].items()}
 
 def unique_name(file_path):
+    if not path.exists(file_path):
+        return file_path
+        
     base, extension = path.splitext(file_path)
-    new_name = f"{base}-{uuid4().hex[:7]}{extension}"
-    print(f"Detected duplicate file. Renaming to: {new_name}")
-    return new_name
+    counter = 1
+    
+    while True:
+        new_name = f"{base}-{counter}{extension}"
+        if not path.exists(new_name):
+            print(f"Detected duplicate file. Renaming to: {new_name}")
+            return new_name
+        counter += 1
 
-def remove_empty_directories(start_dir):
-    try:
-        for entry in scandir(start_dir):
-            if entry.is_dir() and entry.name not in excluded_directories:
-                remove_empty_directories(entry.path)
-                try:
-                    if not listdir(entry.path):
-                        rmdir(entry.path)
-                except Exception as error:
-                    handle_error(entry.path, error)
-    except Exception as error:
-        handle_error(start_dir, error)
-
-def handle_error(file_name, error):
-    if isinstance(error, FileNotFoundError):
-        print(f"Error: File not found - {file_name}")
-    elif isinstance(error, PermissionError):
-        print(f"Error: Permission denied - {file_name}")
-    elif isinstance(error, (EOFError, ValueError)):
-        print(f"Error: Corrupt - {file_name}: {error}")
-    else:
-        print(f"Unexpected error processing {file_name}: {error}")
+def remove_empty_directories(path, excluded=()):
+    deleted_count = 0
+    with scandir(path) as entries:
+        for entry in entries:
+            if entry.is_dir() and entry.name not in excluded:
+                deleted_count += remove_empty_directories(entry.path, excluded)
+    with scandir(path) as entries:
+        if not any(True for _ in entries):
+            rmdir(path)
+            deleted_count += 1
+    return deleted_count

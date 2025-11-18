@@ -1,5 +1,4 @@
 from time import time
-from uuid import uuid4
 from shutil import move
 from zipfile import ZipFile
 from rarfile import RarFile
@@ -18,42 +17,51 @@ archive_handlers = {
     ".bz2": TarFile,
 }
 
+def warn_user():
+    lines = [
+        "⚠️  WARNING!",
+        "Please close ALL programs using:",
+        "• .gma addon files",
+        "• .bin files",
+        "If these files are in use, errors may occur.",
+        "These errors are NOT handled by this script."
+    ]
+    width = max(len(line) for line in lines) + 4
+    print("┌" + "─" * width + "┐")
+    for line in lines:
+        print("│ " + line.ljust(width - 2) + " │")
+    print("└" + "─" * width + "┘")
+
+    confirmation = ""
+    while confirmation.lower() != "i understand":
+        confirmation = input("Type 'I understand' to continue: ").strip()
+
 def extract_archive(archive_path, archive_count):
     extension = path.splitext(archive_path)[1]
     archive_handler = archive_handlers.get(extension)
 
-    try:
-        makedirs(uuid4().hex, exist_ok=True)
+    base_output_dir = path.splitext(path.basename(archive_path))[0]
+    output_dir = unique_name(base_output_dir)
+    makedirs(output_dir, exist_ok=True)
 
-        with archive_handler(archive_path, 'r') as archive:
-            archive.extractall(uuid4().hex)
+    with archive_handler(archive_path, 'r') as archive:
+        archive.extractall(output_dir)
 
-        leftover_folder = 'Leftover'
-        if not path.exists(leftover_folder):
-            makedirs(leftover_folder)
+    leftover_folder = 'Leftover'
+    makedirs(leftover_folder, exist_ok=True)
 
-        destination_path = path.join(leftover_folder, path.basename(archive_path))
-        if path.exists(destination_path):
-            destination_path = unique_name(destination_path)
+    destination_path = path.join(leftover_folder, path.basename(archive_path))
+    if path.exists(destination_path):
+        destination_path = unique_name(destination_path)
+    move(archive_path, destination_path)
 
-        move(archive_path, destination_path)
-        print(f"Processed and moved: {archive_path}")
-        
-        if extension in archive_count:
-            archive_count[extension] += 1
-
-    except FileNotFoundError:
-        print(f"Error: File not found - {archive_path.name}")
-    except PermissionError:
-        print(f"Error: Permission denied - {archive_path.name}")
-    except (EOFError, ValueError) as archive_error:
-        print(f"Error: Corrupt or unsupported archive - {archive_path.name}: {archive_error}")
-    except Exception as error:
-        print(f"Unexpected error processing {archive_path.name}: {str(error)}")
+    if extension in archive_count:
+        archive_count[extension] += 1
+    else:
+        archive_count[extension] = 1
 
 def process_archives():
     archives = []
-
     archive_extensions = {extension[1:] for extension in archive_handlers.keys()}
 
     for root, directories, files in walk('.'):
@@ -65,28 +73,62 @@ def process_archives():
     return archives
 
 def main():
+    warn_user()
     start_time = time()
 
+    print("┌────────────────────────────────────┐")
+    print("│        Archive Extractor           │")
+    print("└────────────────────────────────────┘")
+    
+    print("• Formats: ZIP, RAR, 7Z, TAR, GZ, XZ, BZ2")
+    
+    archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0}
+    
+    print("• Scanning for archives...")
     archives = process_archives()
-    if not archives:
-        print("No archives found.")
-        return
+    print(f"• Found {len(archives)} total archives")
 
-    archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0,}
-
+    found_counts = {ext: 0 for ext in archive_count.keys()}
     for archive in archives:
-        extract_archive(archive, archive_count)
+        ext = path.splitext(archive)[1]
+        if ext in found_counts:
+            found_counts[ext] += 1
+    
+    print("• Breakdown:")
+    for ext, count in found_counts.items():
+        if count > 0:
+            print(f"  {ext.upper()}: {count}")
 
-    print("Removing empty directories...")
-    remove_empty_directories('.')
+    if archives:
+        print("• Extracting archives...")
+        for i, archive in enumerate(archives, 1):
+            ext = path.splitext(archive)[1]
+            print(f"• [{i}/{len(archives)}] {path.basename(archive)}")
+            extract_archive(archive, archive_count)
+        print("• Extraction complete")
+    else:
+        print("• No archives found")
 
-    if any(archive_count.values()):
-        print("\nSummary:")
-        for extension, count in archive_count.items():
-            if count > 0:
-                print(f"Total {extension} files processed: {count}")
+    print("• Cleaning up...")
+    deleted_dirs_count = remove_empty_directories('.')
+    print(f"• Removed {deleted_dirs_count} empty directories")
 
-        elapsed_time = time() - start_time
-        formatted_time = format_time(elapsed_time)
+    elapsed_time = time() - start_time
+    formatted_time = format_time(elapsed_time)
 
-        print(f"Total time taken: {formatted_time}\n")
+    print("\n" + "─" * 45)
+    print("COMPLETE")
+    print("─" * 45)
+    print(f"Time: {formatted_time}")
+    print(f"Total: {len(archives)} archives")
+    
+    total_processed = 0
+    for ext, count in archive_count.items():
+        if count > 0:
+            print(f"• {ext.upper()}: {count}")
+            total_processed += count
+    
+    print(f"• Processed: {total_processed} files")
+    print(f"• Archived: {len(archives)} files")
+    print(f"• Directories cleaned: {deleted_dirs_count}")
+    print("─" * 45)
