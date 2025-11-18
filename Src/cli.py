@@ -14,19 +14,17 @@ def display_info():
     )
 
 def display_build_info():
-    print(
+    separator = "=" * 75
+    info = (
         f"Build Information:\n"
-        f"{'=' * 75}\n"
-        f"Program: Workshop Decompressor {app_version}\n"
-        f"Build Date: {build_date}\n"
+        f"{separator}\n"
+        f"Program         : Workshop Decompressor {app_version}\n"
+        f"Build Date      : {build_date}\n"
         f"Operating System: {get_system_info()}\n"
-        f"Dependencies:\n"
-        f"  • PyInstaller: {pyinstaller_version}\n"
-        f"  • Py7zr: {py7zr_version}\n"
-        f"  • RarFile: {rarfile_version}\n"
-        f"  • 7-zip: 25.01\n"
-        f"{'=' * 75}"
+        f"Dependencies    : PyInstaller {pyinstaller_version}, Py7zr {py7zr_version}, RarFile {rarfile_version}, 7-Zip 25.01\n"
+        f"{separator}"
     )
+    print(info)
 
 def display_menu():
     print(
