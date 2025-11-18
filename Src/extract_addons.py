@@ -1,5 +1,4 @@
 from time import time
-from uuid import uuid4
 from shutil import move
 from subprocess import run, DEVNULL
 from concurrent.futures import ThreadPoolExecutor
@@ -27,13 +26,16 @@ def add_extension_to_files_without_format(start_dir):
     return renamed_count
 
 def extract_bin_file(bin_file, seven_zip_path, addon_formats_count):
-    extract_directory = path.join(path.dirname(bin_file), uuid4().hex)
+    base_folder = path.join(path.dirname(bin_file), "Extracted-Bin")
+    extract_directory = unique_name(base_folder)
+    makedirs(extract_directory, exist_ok=True)
     run([seven_zip_path, 'x', bin_file, '-o' + extract_directory],
         stdout=DEVNULL, stderr=DEVNULL)
     addon_formats_count[".bin"] += 1
 
 def extract_gma_file(gma_file, fastgmad_path, addon_formats_count):
-    addon_folder = path.join('Extracted-Addons', uuid4().hex)
+    base_folder = path.join("Extracted-Addons", "Addon")
+    addon_folder = unique_name(base_folder)
     makedirs(addon_folder, exist_ok=True)
     run([fastgmad_path, 'extract', '-file', gma_file, '-out', addon_folder],
         stdout=DEVNULL, stderr=DEVNULL)
@@ -75,7 +77,7 @@ def main():
         workers = max(1, cpu_count() - 2)
         print(f"• Extracting {len(bin_files)} files with {workers} workers...")
         with ThreadPoolExecutor(max_workers=workers) as executor:
-            executor.map(lambda f: extract_bin_file(f, seven_zip_path, addon_formats_count), bin_files)
+            executor.map(extract_bin_file, bin_files, [seven_zip_path]*len(bin_files), [addon_formats_count]*len(bin_files))
         print(f"• Extracted {addon_formats_count['.bin']} .bin files")
 
     print("• Checking for files without extensions...")
@@ -91,8 +93,8 @@ def main():
         workers = max(1, cpu_count() - 2)
         print(f"• Extracting {len(gma_files)} files with {workers} workers...")
         with ThreadPoolExecutor(max_workers=workers) as executor:
-            executor.map(lambda f: extract_gma_file(f, fastgmad_path, addon_formats_count), gma_files)
-        print(f"• Extracted {addon_formats_count['.gma']} .gma files")
+            executor.map(extract_gma_file, gma_files, [fastgmad_path]*len(gma_files), [addon_formats_count]*len(gma_files))
+        print(f"•Extracted {addon_formats_count['.gma']} .gma files")
 
     print("• Moving processed files...")
     all_processed_files = bin_files + gma_files
