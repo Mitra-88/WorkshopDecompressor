@@ -1,10 +1,24 @@
+import os
 import sys
+import platform
 from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
 from utils import get_system_info, app_version, build_date
 from py7zr import __version__ as py7zr_version
 from rarfile import __version__ as rarfile_version
 from PyInstaller import __version__ as pyinstaller_version
+
+def set_cli_title():
+    title = f"Workshop Decompressor {app_version}"
+    system = platform.system()
+    
+    if system == "Windows":
+        os.system(f"title {title}")
+    else:
+        sys.stdout.write(f"\033]0;{title}\007")
+        sys.stdout.flush()
+
+set_cli_title()
 
 def display_info():
     print(
