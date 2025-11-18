@@ -3,7 +3,7 @@ from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
-app_version = f"v2.5.0 (12d8bac)"
+app_version = f"v2.6.0 (405d3bb)"
 build_date = "2025-11-18 (Tuesday, November 18, 2025)"
 
 def format_time(seconds):
@@ -53,16 +53,37 @@ def get_system_info():
         return f"macOS {mac_version or platform.release()} {arch}"
 
 def get_executable_paths():
-    platform_name = platform.system()
-    base_dir = 'Bin'
-    executables = {
-        'Windows': {'7z': '7z.exe', 'fastgmad': 'fastgmad.exe'},
-        'Linux': {'7z': '7z', 'fastgmad': 'fastgmad'},
-        'Darwin': {'7z': '7z', 'fastgmad': 'fastgmad'}
-    }
-    
-    return {exe: path.join(base_dir, platform_name, exe_name) 
-            for exe, exe_name in executables[platform_name].items()}
+    bin_dir = path.join('Bin', platform.system())
+    files = {'7z': '7z.exe' if platform.system() == 'Windows' else '7z',
+             'fastgmad': 'fastgmad.exe' if platform.system() == 'Windows' else 'fastgmad'}
+    result, missing = {}, []
+
+    for key, fname in files.items():
+        full = path.join(bin_dir, fname)
+        if not path.exists(full):
+            missing.append(full)
+        result[key] = full
+
+    if missing:
+        lines = [
+            "⚠️  WARNING: Some required executables are missing!",
+            "Possible reasons:",
+            " • You forgot to copy/move the 'Bin' folder into the program's directory",
+            " • An antivirus or other program removed some files",
+            "Please make sure the 'Bin' folder exists and contains:"
+        ]
+        lines += [f" • {m}" for m in missing]
+        lines.append("The program may not work correctly until this is fixed.")
+        
+        width = max(len(line) for line in lines) + 4
+        print("┌" + "─" * width + "┐")
+        for line in lines:
+            print("│ " + line.ljust(width - 2) + " │")
+        print("└" + "─" * width + "┘\n")
+        
+        input("Type 'I understand' to continue: ")
+
+    return result
 
 def unique_name(file_path):
     if not path.exists(file_path):

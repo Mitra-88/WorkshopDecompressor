@@ -32,7 +32,7 @@ Download the Latest Release:
 ### **Step 1: Put the program where your addons are**
 
 **If you use SteamCMD:**
-Drop the Workshop Decompressor EXE into this folder:
+Drop the Workshop Decompressor into this folder:
 `steamcmd/steamapps/workshop/content/4000`
 That’s where all your downloaded GMod addons live.
 
