@@ -40,12 +40,12 @@ def display_menu():
 
 def display_help():
     print(
-        "\nHelp:\n"
-        "1. Extract addons - For GMA and BIN files.\n"
-        "2. Extract archives - Extracts archive formats (ZIP/RAR/7Z/TAR/TAR.XZ/TAR.GZ/TAR.BZ2).\n"
-        "3. Help - Displays this info.\n"
-        "4. Build Info - Shows detailed build information.\n"
-        "5. Exit - Closes the program.\n"
+        "\n=== HELP MENU ===\n"
+        "1. Extract Addons      - Extracts GMA and BIN addon files.\n"
+        "2. Extract Archives    - Extracts archive files (ZIP, RAR, 7Z, TAR, TAR.XZ, TAR.GZ, TAR.BZ2).\n"
+        "3. Help                - Displays this help menu.\n"
+        "4. Build Info          - Shows detailed build information about the program.\n"
+        "5. Exit                - Closes the application.\n"
     )
 
 def handle_choice(user_input):
