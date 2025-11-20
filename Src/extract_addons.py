@@ -122,7 +122,7 @@ def main():
     print(f"• Moved {moved_count} files to Leftover")
 
     print("• Cleaning empty directories...")
-    deleted_dirs_count = remove_empty_directories('.')
+    deleted_dirs_count = remove_empty_directories('.', excluded_directories)
     print(f"• Removed {deleted_dirs_count} empty directories")
 
     end_time = time()
