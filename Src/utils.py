@@ -83,7 +83,9 @@ def get_executable_paths():
             print("│ " + line.ljust(width - 2) + " │")
         print("└" + "─" * width + "┘\n")
         
-        input("Type 'I understand' to continue: ")
+        confirmation = ""
+        while confirmation.lower() != "i understand":
+            confirmation = input("Type 'I understand' to continue: ").strip()
 
     return result
 
@@ -97,18 +99,18 @@ def unique_name(file_path):
     while True:
         new_name = f"{base}-{counter}{extension}"
         if not path.exists(new_name):
-            print(f"Detected duplicate file. Renaming to: {new_name}")
+            print(f"Detected duplicate file/folder. Renaming to: {new_name}")
             return new_name
         counter += 1
 
-def remove_empty_directories(path, excluded=()):
+def remove_empty_directories(path, excluded=excluded_directories):
     deleted_count = 0
     with scandir(path) as entries:
         for entry in entries:
             if entry.is_dir() and entry.name not in excluded:
                 deleted_count += remove_empty_directories(entry.path, excluded)
     with scandir(path) as entries:
-        if not any(True for _ in entries):
+        if path not in excluded and not any(True for _ in entries):
             rmdir(path)
             deleted_count += 1
     return deleted_count
