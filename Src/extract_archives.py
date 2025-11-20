@@ -12,23 +12,10 @@ archive_handlers = {
     ".rar": RarFile,
     ".7z": SevenZipFile,
     ".tar": TarFile,
-    ".tar.gz": TarFile,
-    ".tar.xz": TarFile,
-    ".tar.bz2": TarFile,
     ".gz": TarFile,
     ".xz": TarFile,
     ".bz2": TarFile,
 }
-
-def get_archive_extension(filename):
-    lower_name = filename.lower()
-
-    for ext in [".tar.gz", ".tar.xz", ".tar.bz2"]:
-        if lower_name.endswith(ext):
-            return ext
-
-    _, ext = path.splitext(filename)
-    return ext.lower() if ext else None
 
 def warn_user():
     lines = [
@@ -50,19 +37,10 @@ def warn_user():
         confirmation = input("Type 'I understand' to continue: ").strip()
 
 def extract_archive(archive_path, archive_count):
-    extension = get_archive_extension(archive_path)
-    
-    if not extension or extension not in archive_handlers:
-        print(f"⚠️ Skipped: Unknown archive format")
-        return
+    extension = path.splitext(archive_path)[1]
+    archive_handler = archive_handlers.get(extension)
 
-    archive_handler = archive_handlers[extension]
-
-    base_name = path.basename(archive_path)
-    if extension in [".tar.gz", ".tar.xz", ".tar.bz2"]:
-        base_output_dir = base_name[:-(len(extension))]
-    else:
-        base_output_dir = path.splitext(base_name)[0]
+    base_output_dir = path.splitext(path.basename(archive_path))[0]
     output_dir = unique_name(base_output_dir)
     makedirs(output_dir, exist_ok=True)
 
@@ -72,7 +50,7 @@ def extract_archive(archive_path, archive_count):
     leftover_folder = 'Leftover'
     makedirs(leftover_folder, exist_ok=True)
 
-    destination_path = path.join(leftover_folder, base_name)
+    destination_path = path.join(leftover_folder, path.basename(archive_path))
     if path.exists(destination_path):
         destination_path = unique_name(destination_path)
     move(archive_path, destination_path)
@@ -84,14 +62,14 @@ def extract_archive(archive_path, archive_count):
 
 def process_archives():
     archives = []
+    archive_extensions = {extension[1:] for extension in archive_handlers.keys()}
 
     for root, directories, files in walk('.'):
         directories[:] = [directory for directory in directories if directory not in excluded_directories]
         for file in files:
-            ext = get_archive_extension(file)
-            if ext and ext in archive_handlers:
+            if file.split('.')[-1] in archive_extensions:
                 archives.append(path.join(root, file))
-
+    
     return archives
 
 def main():
@@ -102,21 +80,18 @@ def main():
     print("│        Archive Extractor           │")
     print("└────────────────────────────────────┘")
     
-    print("• Formats: ZIP, RAR, 7Z, TAR, TAR.GZ, TAR.XZ, TAR.BZ2")
+    print("• Formats: ZIP, RAR, 7Z, TAR, GZ, XZ, BZ2")
     
-    archive_count = {
-        ".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0,
-        ".tar.gz": 0, ".tar.xz": 0, ".tar.bz2": 0
-    }
-
+    archive_count = {".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, ".gz": 0, ".xz": 0, ".bz2": 0}
+    
     print("• Scanning for archives...")
     archives = process_archives()
     print(f"• Found {len(archives)} total archives")
 
     found_counts = {ext: 0 for ext in archive_count.keys()}
     for archive in archives:
-        ext = get_archive_extension(archive)
-        if ext and ext in found_counts:
+        ext = path.splitext(archive)[1]
+        if ext in found_counts:
             found_counts[ext] += 1
     
     print("• Breakdown:")
@@ -127,7 +102,7 @@ def main():
     if archives:
         print("• Extracting archives...")
         for i, archive in enumerate(archives, 1):
-            ext = get_archive_extension(archive)
+            ext = path.splitext(archive)[1]
             print(f"• [{i}/{len(archives)}] {path.basename(archive)}")
             extract_archive(archive, archive_count)
         print("• Extraction complete")
