@@ -89,16 +89,21 @@ def get_executable_paths():
 
     return result
 
+_counter_cache = {}
+
 def unique_name(file_path):
     if not path.exists(file_path):
         return file_path
-        
+    
     base, extension = path.splitext(file_path)
-    counter = 1
+    cache_key = f"{base}{extension}"
+
+    counter = _counter_cache.get(cache_key, 1)
     
     while True:
         new_name = f"{base}-{counter}{extension}"
         if not path.exists(new_name):
+            _counter_cache[cache_key] = counter + 1
             print(f"Detected duplicate file/folder. Renaming to: {new_name}")
             return new_name
         counter += 1
