@@ -91,7 +91,7 @@ def process_archives():
             ext = get_archive_extension(file)
             if ext and ext in archive_handlers:
                 archives.append(path.join(root, file))
-    
+
     return archives
 
 def main():
@@ -105,11 +105,10 @@ def main():
     print("• Formats: ZIP, RAR, 7Z, TAR, TAR.GZ, TAR.XZ, TAR.BZ2")
     
     archive_count = {
-        ".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0, 
-        ".tar.gz": 0, ".tar.xz": 0, ".tar.bz2": 0,
-        ".gz": 0, ".xz": 0, ".bz2": 0
+        ".zip": 0, ".rar": 0, ".7z": 0, ".tar": 0,
+        ".tar.gz": 0, ".tar.xz": 0, ".tar.bz2": 0
     }
-    
+
     print("• Scanning for archives...")
     archives = process_archives()
     print(f"• Found {len(archives)} total archives")

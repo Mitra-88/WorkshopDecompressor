@@ -92,7 +92,7 @@ def main():
     print("• Scanning for .bin files...")
     bin_files = find_files_with_extension('.bin', '.')
     print(f"• Found {len(bin_files)} .bin files")
-    
+
     if bin_files:
         workers = max(1, cpu_count() - 2)
         print(f"• Extracting {len(bin_files)} files with {workers} workers...")
@@ -108,7 +108,7 @@ def main():
     print("• Scanning for .gma files...")
     gma_files = find_files_with_extension('.gma', '.')
     print(f"• Found {len(gma_files)} .gma files")
-    
+
     if gma_files:
         workers = max(1, cpu_count() - 2)
         print(f"• Extracting {len(gma_files)} files with {workers} workers...")
