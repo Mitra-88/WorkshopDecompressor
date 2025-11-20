@@ -24,7 +24,8 @@ def warn_user():
         "• .gma addon files",
         "• .bin files",
         "If these files are in use, errors may occur.",
-        "These errors are NOT handled by this script."
+        "These errors are NOT handled by this script.",
+        "Files with more than one dot in the name (like hello.my.friend) won't work. Only normal ones with one dot work (like hello.py).",
     ]
     width = max(len(line) for line in lines) + 4
     print("┌" + "─" * width + "┐")
