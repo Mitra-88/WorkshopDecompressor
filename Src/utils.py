@@ -1,6 +1,7 @@
 import platform
 from uuid import uuid4
 from datetime import datetime
+from collections import OrderedDict
 from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
@@ -89,7 +90,8 @@ def get_executable_paths():
 
     return result
 
-_counter_cache = {}
+_counter_cache = OrderedDict()
+_MAX_CACHE_SIZE = 1000
 
 def unique_name(file_path):
     if not path.exists(file_path):
@@ -104,6 +106,11 @@ def unique_name(file_path):
         new_name = f"{base}-{counter}{extension}"
         if not path.exists(new_name):
             _counter_cache[cache_key] = counter + 1
+            _counter_cache.move_to_end(cache_key)
+
+            if len(_counter_cache) > _MAX_CACHE_SIZE:
+                _counter_cache.popitem(last=False)
+            
             print(f"Detected duplicate file/folder. Renaming to: {new_name}")
             return new_name
         counter += 1
