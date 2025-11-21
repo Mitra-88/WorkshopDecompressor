@@ -111,7 +111,7 @@ def main():
         print("• No archives found")
 
     print("• Cleaning up...")
-    deleted_dirs_count = remove_empty_directories('.')
+    deleted_dirs_count = remove_empty_directories('.', excluded_directories)
     print(f"• Removed {deleted_dirs_count} empty directories")
 
     elapsed_time = time() - start_time
