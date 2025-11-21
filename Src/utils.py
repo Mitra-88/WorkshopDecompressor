@@ -108,14 +108,19 @@ def unique_name(file_path):
             return new_name
         counter += 1
 
-def remove_empty_directories(path, excluded=excluded_directories):
+def remove_empty_directories(directory, excluded=excluded_directories):
     deleted_count = 0
-    with scandir(path) as entries:
+    with scandir(directory) as entries:
         for entry in entries:
             if entry.is_dir() and entry.name not in excluded:
                 deleted_count += remove_empty_directories(entry.path, excluded)
-    with scandir(path) as entries:
-        if path not in excluded and not any(True for _ in entries):
-            rmdir(path)
-            deleted_count += 1
+
+    try:
+        with scandir(directory) as entries:
+            if directory not in excluded and not any(True for _ in entries):
+                rmdir(directory)
+                deleted_count += 1
+    except (OSError, FileNotFoundError):
+        pass
+
     return deleted_count
