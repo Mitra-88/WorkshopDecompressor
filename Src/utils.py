@@ -1,7 +1,6 @@
 import platform
 from uuid import uuid4
 from datetime import datetime
-from collections import OrderedDict
 from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
@@ -90,30 +89,11 @@ def get_executable_paths():
 
     return result
 
-_counter_cache = OrderedDict()
-_MAX_CACHE_SIZE = 1000
-
 def unique_name(file_path):
-    if not path.exists(file_path):
-        return file_path
-    
     base, extension = path.splitext(file_path)
-    cache_key = f"{base}{extension}"
-
-    counter = _counter_cache.get(cache_key, 1)
-    
-    while True:
-        new_name = f"{base}-{counter}{extension}"
-        if not path.exists(new_name):
-            _counter_cache[cache_key] = counter + 1
-            _counter_cache.move_to_end(cache_key)
-
-            if len(_counter_cache) > _MAX_CACHE_SIZE:
-                _counter_cache.popitem(last=False)
-            
-            print(f"Detected duplicate file/folder. Renaming to: {new_name}")
-            return new_name
-        counter += 1
+    new_name = f"{base}-{uuid4().hex[:7]}{extension}"
+    print(f"Detected duplicate file/folder. Renaming to: {new_name}")
+    return new_name
 
 def remove_empty_directories(directory, excluded=excluded_directories):
     deleted_count = 0
