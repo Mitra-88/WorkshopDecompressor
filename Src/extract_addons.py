@@ -1,9 +1,14 @@
 from time import time
 from shutil import move
 from subprocess import run, DEVNULL
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from os import path, scandir, rename, makedirs, cpu_count
+from threading import Lock
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
 from utils import format_time, get_executable_paths, unique_name, excluded_directories, remove_empty_directories
+
+count_lock = Lock()
+addon_formats_count = {".bin": 0, ".gma": 0}
 
 def find_files_with_extension(extension, start_dir):
     files = []
@@ -25,21 +30,23 @@ def add_extension_to_files_without_format(start_dir):
             renamed_count += 1
     return renamed_count
 
-def extract_bin_file(bin_file, seven_zip_path, addon_formats_count):
+def extract_bin_file(bin_file, seven_zip_path):
     base_folder = path.join(path.dirname(bin_file), "Extracted-Bin")
     extract_directory = unique_name(base_folder)
     makedirs(extract_directory, exist_ok=True)
     run([seven_zip_path, 'x', bin_file, '-o' + extract_directory],
         stdout=DEVNULL, stderr=DEVNULL)
-    addon_formats_count[".bin"] += 1
+    with count_lock:
+        addon_formats_count[".bin"] += 1
 
-def extract_gma_file(gma_file, fastgmad_path, addon_formats_count):
+def extract_gma_file(gma_file, fastgmad_path):
     base_folder = path.join("Extracted-Addons", "Addon")
     addon_folder = unique_name(base_folder)
     makedirs(addon_folder, exist_ok=True)
     run([fastgmad_path, 'extract', '-file', gma_file, '-out', addon_folder],
         stdout=DEVNULL, stderr=DEVNULL)
-    addon_formats_count[".gma"] += 1
+    with count_lock:
+        addon_formats_count[".gma"] += 1
 
 def move_files_to_leftover(files, leftover_dir):
     makedirs(leftover_dir, exist_ok=True)
@@ -74,14 +81,12 @@ def warn_user():
 def main():
     warn_user()
     start_time = time()
-    addon_formats_count = {".bin": 0, ".gma": 0}
 
     print("┌───────────────────────────────────────┐")
     print("│        Workshop Decompressor          │")
     print("└───────────────────────────────────────┘")
     
     print("• Setting up environment...")
-    
     exec_paths = get_executable_paths()
     seven_zip_path = exec_paths['7z']
     fastgmad_path = exec_paths['fastgmad']
@@ -96,9 +101,18 @@ def main():
     if bin_files:
         workers = max(1, cpu_count() - 2)
         print(f"• Extracting {len(bin_files)} files with {workers} workers...")
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            executor.map(extract_bin_file, bin_files, [seven_zip_path]*len(bin_files), [addon_formats_count]*len(bin_files))
-        print(f"• Extracted {addon_formats_count['.bin']} .bin files")
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold blue]{task.description}"),
+            BarColumn(),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            TimeElapsedColumn()
+        ) as progress:
+            task = progress.add_task("Extracting .bin files", total=len(bin_files))
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [executor.submit(extract_bin_file, f, seven_zip_path) for f in bin_files]
+                for f in as_completed(futures):
+                    progress.advance(task)
 
     print("• Checking for files without extensions...")
     renamed_count = add_extension_to_files_without_format('.')
@@ -112,9 +126,18 @@ def main():
     if gma_files:
         workers = max(1, cpu_count() - 2)
         print(f"• Extracting {len(gma_files)} files with {workers} workers...")
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            executor.map(extract_gma_file, gma_files, [fastgmad_path]*len(gma_files), [addon_formats_count]*len(gma_files))
-        print(f"• Extracted {addon_formats_count['.gma']} .gma files")
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[bold green]{task.description}"),
+            BarColumn(),
+            "[progress.percentage]{task.percentage:>3.0f}%",
+            TimeElapsedColumn()
+        ) as progress:
+            task = progress.add_task("Extracting .gma files", total=len(gma_files))
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [executor.submit(extract_gma_file, f, fastgmad_path) for f in gma_files]
+                for f in as_completed(futures):
+                    progress.advance(task)
 
     print("• Moving processed files...")
     all_processed_files = bin_files + gma_files
@@ -125,8 +148,7 @@ def main():
     deleted_dirs_count = remove_empty_directories('.', excluded_directories)
     print(f"• Removed {deleted_dirs_count} empty directories")
 
-    end_time = time()
-    elapsed_time = end_time - start_time
+    elapsed_time = time() - start_time
     formatted_time = format_time(elapsed_time)
 
     print("\n" + "─" * 40)
