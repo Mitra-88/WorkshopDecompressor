@@ -6,7 +6,7 @@ from py7zr import SevenZipFile
 from tarfile import open as TarFile
 from os import path, makedirs, walk
 from threading import Lock
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+from rich.progress import Progress, SpinnerColumn, BarColumn, TimeElapsedColumn
 from utils import format_time, unique_name, excluded_directories, remove_empty_directories
 
 archive_handlers = {
@@ -27,7 +27,8 @@ def warn_user():
         "⚠️  WARNING!",
         "Please make sure files you want to process are not open in other programs.",
         "These errors are NOT handled by this script.",
-        "Files with more than one dot in the name (like hello.my.friend) won't work. Only normal ones with one dot work (like hello.py).",
+        "Files with more than one dot in the name (like small.cats.png) won't work."
+        "Only normal ones with one dot work (like cats.png).",
     ]
     width = max(len(line) for line in lines) + 4
     print("┌" + "─" * width + "┐")
