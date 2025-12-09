@@ -21,7 +21,7 @@
 
 # Getting the Source Code
 
-- Download the zip archive from the [latest release](https://github.com/Mitra-88/Workshop Decompressor/releases/latest). `Source code (zip)`
+- Download the zip archive from the [latest release](https://github.com/Mitra-88/WorkshopDecompressor/releases/latest). `Source code (zip)`
 
 # Dependencies
 
