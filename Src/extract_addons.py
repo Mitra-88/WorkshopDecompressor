@@ -111,7 +111,7 @@ def main():
             task = progress.add_task("Extracting .bin files", total=len(bin_files))
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 futures = [executor.submit(extract_bin_file, f, seven_zip_path) for f in bin_files]
-                for f in as_completed(futures):
+                for _ in as_completed(futures):
                     progress.advance(task)
 
     print("• Checking for files without extensions...")
