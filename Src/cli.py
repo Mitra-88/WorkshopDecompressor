@@ -28,14 +28,14 @@ def display_info():
     )
 
 def display_build_info():
-    separator = "=" * 75
+    separator = "=" * 90
     info = (
         f"Build Information:\n"
         f"{separator}\n"
         f"Program         : Workshop Decompressor {app_version}\n"
         f"Build Date      : {build_date}\n"
         f"Operating System: {get_system_info()}\n"
-        f"Dependencies    : PyInstaller {pyinstaller_version}, Py7zr {py7zr_version}, RarFile {rarfile_version}, 7-Zip 25.01\n"
+        f"Dependencies    : PyInstaller {pyinstaller_version}, Py7zr {py7zr_version}, RarFile {rarfile_version}, Rich 14.2.0, 7-Zip 25.01\n"
         f"{separator}"
     )
     print(info)

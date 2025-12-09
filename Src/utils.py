@@ -1,10 +1,11 @@
 import platform
+from uuid import uuid4
 from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
-app_version = f"v2.6.0 (405d3bb)"
-build_date = "2025-11-18 (Tuesday, November 18, 2025)"
+app_version = f"v2.6.1 (4e27c46)"
+build_date = "2025-12-09 (Tuesday, December 09, 2025)"
 
 def format_time(seconds):
     h, seconds = divmod(seconds, 3600)
@@ -81,32 +82,47 @@ def get_executable_paths():
             print("│ " + line.ljust(width - 2) + " │")
         print("└" + "─" * width + "┘\n")
         
-        input("Type 'I understand' to continue: ")
+        confirmation = ""
+        while confirmation.lower() != "i understand":
+            confirmation = input("Type 'I understand' to continue: ").strip()
 
     return result
 
 def unique_name(file_path):
-    if not path.exists(file_path):
-        return file_path
-        
     base, extension = path.splitext(file_path)
-    counter = 1
-    
-    while True:
-        new_name = f"{base}-{counter}{extension}"
-        if not path.exists(new_name):
-            print(f"Detected duplicate file. Renaming to: {new_name}")
-            return new_name
-        counter += 1
 
-def remove_empty_directories(path, excluded=()):
+    while True:
+        new_name = f"{base}-{uuid4().hex[:7]}{extension}"
+        if not path.exists(new_name):
+            print(f"Detected duplicate file/folder. Renaming to: {new_name}")
+            return new_name
+
+def remove_empty_directories(directory, excluded=excluded_directories):
     deleted_count = 0
-    with scandir(path) as entries:
-        for entry in entries:
-            if entry.is_dir() and entry.name not in excluded:
-                deleted_count += remove_empty_directories(entry.path, excluded)
-    with scandir(path) as entries:
-        if not any(True for _ in entries):
-            rmdir(path)
+    dir_name = path.basename(directory)
+    if dir_name in excluded:
+        return 0
+    try:
+        with scandir(directory) as entries:
+            for entry in entries:
+                if entry.is_dir():
+                    if entry.name not in excluded:
+                        deleted_count += remove_empty_directories(entry.path, excluded)
+    except PermissionError:
+        return deleted_count
+    except FileNotFoundError:
+        return deleted_count
+    try:
+        with scandir(directory) as entries:
+            is_empty = not any(True for _ in entries)
+    except (OSError, PermissionError, FileNotFoundError):
+        return deleted_count
+
+    if is_empty and dir_name not in excluded:
+        try:
+            rmdir(directory)
             deleted_count += 1
+        except (OSError, PermissionError, FileNotFoundError):
+            pass
+
     return deleted_count

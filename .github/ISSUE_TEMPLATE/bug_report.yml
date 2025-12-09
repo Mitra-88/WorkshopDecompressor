@@ -42,6 +42,6 @@ body:
     id: vae-version
     attributes:
       label: What version of WorkshopDecompressor are you using?
-      placeholder: ex. WorkshopDecompressor 2.5.0
+      placeholder: ex. WorkshopDecompressor 2.6.1
     validations:
       required: true

@@ -21,7 +21,7 @@
 
 # Getting the Source Code
 
-- Download the zip archive from the [latest release](https://github.com/Mitra-88/Workshop Decompressor/releases/latest). `Source code (zip)`
+- Download the zip archive from the [latest release](https://github.com/Mitra-88/WorkshopDecompressor/releases/latest). `Source code (zip)`
 
 # Dependencies
 
@@ -31,6 +31,7 @@ You need the following to compile Workshop Decompressor:
 - [PyInstaller](https://www.pyinstaller.org/) 6.16.0+
 - [Py7zr](https://pypi.org/project/py7zr/) 1.0.0+
 - [RarFile](https://pypi.org/project/rarfile/) 4.2+
+- [Rich](https://pypi.org/project/rich/) 14.2.0+
 
 ## Linux Dependencies
 
