@@ -5,7 +5,7 @@ from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
-app_version = f"v2.6.0 ({uuid4().hex[:7]})"
+app_version = f"v2.6.1 ({uuid4().hex[:7]})"
 build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d, %Y)")
 
 def format_time(seconds):
@@ -91,23 +91,39 @@ def get_executable_paths():
 
 def unique_name(file_path):
     base, extension = path.splitext(file_path)
-    new_name = f"{base}-{uuid4().hex[:7]}{extension}"
-    print(f"Detected duplicate file/folder. Renaming to: {new_name}")
-    return new_name
+
+    while True:
+        new_name = f"{base}-{uuid4().hex[:7]}{extension}"
+        if not path.exists(new_name):
+            print(f"Detected duplicate file/folder. Renaming to: {new_name}")
+            return new_name
 
 def remove_empty_directories(directory, excluded=excluded_directories):
     deleted_count = 0
-    with scandir(directory) as entries:
-        for entry in entries:
-            if entry.is_dir() and entry.name not in excluded:
-                deleted_count += remove_empty_directories(entry.path, excluded)
-
+    dir_name = path.basename(directory)
+    if dir_name in excluded:
+        return 0
     try:
         with scandir(directory) as entries:
-            if directory not in excluded and not any(True for _ in entries):
-                rmdir(directory)
-                deleted_count += 1
-    except (OSError, FileNotFoundError):
-        pass
+            for entry in entries:
+                if entry.is_dir():
+                    if entry.name not in excluded:
+                        deleted_count += remove_empty_directories(entry.path, excluded)
+    except PermissionError:
+        return deleted_count
+    except FileNotFoundError:
+        return deleted_count
+    try:
+        with scandir(directory) as entries:
+            is_empty = not any(True for _ in entries)
+    except (OSError, PermissionError, FileNotFoundError):
+        return deleted_count
+
+    if is_empty and dir_name not in excluded:
+        try:
+            rmdir(directory)
+            deleted_count += 1
+        except (OSError, PermissionError, FileNotFoundError):
+            pass
 
     return deleted_count
