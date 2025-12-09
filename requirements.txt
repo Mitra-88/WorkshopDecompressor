@@ -1,3 +1,4 @@
 pyinstaller
 rarfile
 py7zr
+rich
