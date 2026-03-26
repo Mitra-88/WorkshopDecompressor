@@ -1,3 +1,4 @@
+import sys
 from time import time
 from shutil import move
 from subprocess import run, DEVNULL
@@ -86,7 +87,7 @@ def warn_user():
 
         if confirmation in ("n", "no"):
             print("Operation cancelled by user.")
-            exit(0)
+            sys.exit(0)
 
         print("Invalid input. Type Y or N only.")
 
