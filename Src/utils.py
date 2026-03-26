@@ -5,8 +5,8 @@ from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
-app_version = f"v2.6.1 ({uuid4().hex[:7]})"
-build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d, %Y)")
+app_version = f"v2.6.2 ({uuid4().hex[:7]})"
+build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d)")
 
 def format_time(seconds):
     h, seconds = divmod(seconds, 3600)
@@ -29,6 +29,20 @@ def normalize_architecture(arch):
     }
     return mapping.get(arch.lower(), arch)
 
+def get_windows_feature_update():
+    if platform.system() != "Windows":
+        return None
+
+    try:
+        import winreg
+        
+        key_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path) as key:
+            display_version, _ = winreg.QueryValueEx(key, "DisplayVersion")
+            return display_version
+    except Exception:
+        return None
+
 def get_system_info():
     system = platform.system()
     arch = normalize_architecture(platform.machine())
@@ -36,7 +50,9 @@ def get_system_info():
         edition = platform.win32_edition()
         release = platform.release()
         version = platform.version()
-        return f"{system} {release} {edition} (Build {version}) {arch}".strip()
+        feature_update = get_windows_feature_update()
+        feature_part = f"{feature_update} " if feature_update else ""
+        return f"{system} {release} {feature_part}{edition} (Build {version}) {arch}".strip()
     elif system == "Linux":
         try:
             os_release = platform.freedesktop_os_release()
