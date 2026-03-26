@@ -27,7 +27,7 @@ def warn_user():
         "⚠️  WARNING!",
         "Please make sure files you want to process are not open in other programs.",
         "These errors are NOT handled by this script.",
-        "Files with more than one dot in the name (like small.cats.png) won't work."
+        "Files with more than one dot in the name (like small.cats.png) won't work.",
         "Only normal ones with one dot work (like cats.png).",
     ]
     width = max(len(line) for line in lines) + 4
@@ -36,9 +36,21 @@ def warn_user():
         print("│ " + line.ljust(width - 2) + " │")
     print("└" + "─" * width + "┘")
 
-    confirmation = ""
-    while confirmation.lower() != "i understand":
-        confirmation = input("Type 'I understand' to continue: ").strip()
+    while True:
+        confirmation = input("Continue? (Y/N): ").strip().lower()
+
+        if confirmation == "":
+            print("Please type Y or N.")
+            continue
+
+        if confirmation in ("y", "yes"):
+            break
+
+        if confirmation in ("n", "no"):
+            print("Operation cancelled by user.")
+            exit(0)
+
+        print("Invalid input. Type Y or N only.")
 
 def extract_archive(archive_path):
     extension = path.splitext(archive_path)[1]
