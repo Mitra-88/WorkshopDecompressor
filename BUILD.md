@@ -28,8 +28,8 @@
 You need the following to compile Workshop Decompressor:
 
 - [Python](https://www.python.org/) 3.12+
-- [PyInstaller](https://www.pyinstaller.org/) 6.16.0+
-- [Py7zr](https://pypi.org/project/py7zr/) 1.0.0+
+- [PyInstaller](https://www.pyinstaller.org/) 6.18.0+
+- [Py7zr](https://pypi.org/project/py7zr/) 1.1.0+
 - [RarFile](https://pypi.org/project/rarfile/) 4.2+
 
 ## Linux Dependencies
