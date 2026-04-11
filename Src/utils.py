@@ -70,41 +70,6 @@ def get_system_info():
         mac_version, *_ = platform.mac_ver()
         return f"macOS {mac_version or platform.release()} {arch}"
 
-def get_executable_paths():
-    bin_dir = path.join('Bin', platform.system())
-    files = {'7z': '7z.exe' if platform.system() == 'Windows' else '7z',
-             'fastgmad': 'fastgmad.exe' if platform.system() == 'Windows' else 'fastgmad'}
-    result, missing = {}, []
-
-    for key, fname in files.items():
-        full = path.join(bin_dir, fname)
-        if not path.exists(full):
-            missing.append(full)
-        result[key] = full
-
-    if missing:
-        lines = [
-            "⚠️  WARNING: Some required executables are missing!",
-            "Possible reasons:",
-            " • You forgot to copy/move the 'Bin' folder into the program's directory",
-            " • An antivirus or other program removed some files",
-            "Please make sure the 'Bin' folder exists and contains:"
-        ]
-        lines += [f" • {m}" for m in missing]
-        lines.append("The program may not work correctly until this is fixed.")
-        
-        width = max(len(line) for line in lines) + 4
-        print("┌" + "─" * width + "┐")
-        for line in lines:
-            print("│ " + line.ljust(width - 2) + " │")
-        print("└" + "─" * width + "┘\n")
-        
-        confirmation = ""
-        while confirmation.lower() != "i understand":
-            confirmation = input("Type 'I understand' to continue: ").strip()
-
-    return result
-
 def unique_name(file_path):
     base, extension = path.splitext(file_path)
 
