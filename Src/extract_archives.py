@@ -24,34 +24,21 @@ archive_count = {ext: 0 for ext in archive_handlers.keys()}
 count_lock = Lock()
 
 def warn_user():
-    lines = [
-        "⚠️  WARNING!",
-        "Please make sure files you want to process are not open in other programs.",
-        "These errors are NOT handled by this script.",
-        "Files with more than one dot in the name (like small.cats.png) won't work.",
-        "Only normal ones with one dot work (like cats.png).",
-    ]
-    width = max(len(line) for line in lines) + 4
-    print("┌" + "─" * width + "┐")
-    for line in lines:
-        print("│ " + line.ljust(width - 2) + " │")
-    print("└" + "─" * width + "┘")
+    print("⚠️  WARNING!")
+    print("Please make sure files you want to process are not open in other programs.")
+    print("These errors are NOT handled by this program.")
+    print("Files with more than one dot in the name (like small.cats.png) won't work.")
+    print("Only normal ones with one dot work (like cats.png).")
 
     while True:
-        confirmation = input("Continue? (Y/N): ").strip().lower()
-
-        if confirmation == "":
-            print("Please type Y or N.")
-            continue
-
-        if confirmation in ("y", "yes"):
-            break
-
-        if confirmation in ("n", "no"):
+        response = input("Do you want to continue? (y/n): ").lower().strip()
+        if response == 'y' or response == 'yes':
+            return True
+        elif response == 'n' or response == 'no':
             print("Operation cancelled by user.")
             sys.exit(0)
-
-        print("Invalid input. Type Y or N only.")
+        else:
+            print("Invalid input. Please enter 'y' for yes or 'n' for no.")
 
 def extract_archive(archive_path):
     extension = path.splitext(archive_path)[1]
@@ -90,11 +77,9 @@ def main():
     warn_user()
     start_time = time()
 
-    print("┌────────────────────────────────────┐")
-    print("│        Archive Extractor           │")
-    print("└────────────────────────────────────┘")
+    print("Archive Extractor")
     
-    print("• Formats: ZIP, RAR, 7Z, TAR, GZ, XZ, BZ2")
+    print("• Formats: ZIP, RAR, 7Z, TAR, TAR.GZ, TAR.XZ, TAR.BZ2")
     
     print("• Scanning for archives...")
     archives = process_archives()
