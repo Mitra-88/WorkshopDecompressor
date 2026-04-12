@@ -1,11 +1,15 @@
+import sys
+import os
+import stat
 from time import time
 from shutil import move
-from subprocess import run, DEVNULL
+from subprocess import run
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from os import path, scandir, rename, makedirs, cpu_count
 from threading import Lock
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
-from utils import format_time, get_executable_paths, unique_name, excluded_directories, remove_empty_directories
+from utils import format_time, unique_name, excluded_directories, remove_empty_directories
+from get_executable import get_executable_paths
 
 count_lock = Lock()
 addon_formats_count = {".bin": 0, ".gma": 0}
@@ -24,7 +28,7 @@ def add_extension_to_files_without_format(start_dir):
     for entry in scandir(start_dir):
         if entry.is_dir() and entry.name not in excluded_directories:
             renamed_count += add_extension_to_files_without_format(entry.path)
-        elif entry.is_file() and '.' not in entry.name and entry.name not in ['Workshop Decompressor']:
+        elif entry.is_file() and '.' not in entry.name and entry.name not in ['WorkshopDecompressor']:
             new_path = entry.path + '.gma'
             rename(entry.path, new_path)
             renamed_count += 1
@@ -34,8 +38,7 @@ def extract_bin_file(bin_file, seven_zip_path):
     base_folder = path.join(path.dirname(bin_file), "Extracted-Bin")
     extract_directory = unique_name(base_folder)
     makedirs(extract_directory, exist_ok=True)
-    run([seven_zip_path, 'x', bin_file, '-o' + extract_directory],
-        stdout=DEVNULL, stderr=DEVNULL)
+    run([seven_zip_path, 'x', bin_file, '-o' + extract_directory])
     with count_lock:
         addon_formats_count[".bin"] += 1
 
@@ -43,8 +46,7 @@ def extract_gma_file(gma_file, fastgmad_path):
     base_folder = path.join("Extracted-Addons", "Addon")
     addon_folder = unique_name(base_folder)
     makedirs(addon_folder, exist_ok=True)
-    run([fastgmad_path, 'extract', '-file', gma_file, '-out', addon_folder],
-        stdout=DEVNULL, stderr=DEVNULL)
+    run([fastgmad_path, 'extract', '-file', gma_file, '-out', addon_folder])
     with count_lock:
         addon_formats_count[".gma"] += 1
 
@@ -60,36 +62,37 @@ def move_files_to_leftover(files, leftover_dir):
     return moved_count
 
 def warn_user():
-    lines = [
-        "⚠️  WARNING!",
-        "Please close ALL programs using:",
-        "• .gma addon files",
-        "• .bin files",
-        "If these files are in use, errors may occur.",
-        "These errors are NOT handled by this script."
-    ]
-    width = max(len(line) for line in lines) + 4
-    print("┌" + "─" * width + "┐")
-    for line in lines:
-        print("│ " + line.ljust(width - 2) + " │")
-    print("└" + "─" * width + "┘")
-
-    confirmation = ""
-    while confirmation.lower() != "i understand":
-        confirmation = input("Type 'I understand' to continue: ").strip()
+    print("⚠️  WARNING!")
+    print("Please close ALL programs using:")
+    print("• .gma addon files")
+    print("• .bin files")
+    print("If these files are in use, errors may occur.")
+    print("These errors are NOT handled by this program.")
+    print()
+    
+    while True:
+        response = input("Do you want to continue? (y/n): ").lower().strip()
+        if response in ['y', 'yes']:
+            return True
+        elif response in ['n', 'no']:
+            print("Operation cancelled by user.")
+            sys.exit(0)
+        else:
+            print("Invalid input. Please enter 'y' for yes or 'n' for no.")
 
 def main():
     warn_user()
     start_time = time()
 
-    print("┌───────────────────────────────────────┐")
-    print("│        Workshop Decompressor          │")
-    print("└───────────────────────────────────────┘")
+    print("Workshop Decompressor")
     
     print("• Setting up environment...")
     exec_paths = get_executable_paths()
     seven_zip_path = exec_paths['7z']
     fastgmad_path = exec_paths['fastgmad']
+
+    os.chmod(seven_zip_path, os.stat(seven_zip_path).st_mode | stat.S_IEXEC)
+    os.chmod(fastgmad_path, os.stat(fastgmad_path).st_mode | stat.S_IEXEC)
 
     base_extract_dir = path.join('Extracted-Addons')
     makedirs(base_extract_dir, exist_ok=True)
@@ -136,7 +139,7 @@ def main():
             task = progress.add_task("Extracting .gma files", total=len(gma_files))
             with ThreadPoolExecutor(max_workers=workers) as executor:
                 futures = [executor.submit(extract_gma_file, f, fastgmad_path) for f in gma_files]
-                for f in as_completed(futures):
+                for _ in as_completed(futures):
                     progress.advance(task)
 
     print("• Moving processed files...")

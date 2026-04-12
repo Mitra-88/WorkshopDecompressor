@@ -28,15 +28,12 @@ def display_info():
     )
 
 def display_build_info():
-    separator = "=" * 90
     info = (
-        f"Build Information:\n"
-        f"{separator}\n"
+        f"\nBuild Information:\n"
         f"Program         : Workshop Decompressor {app_version}\n"
         f"Build Date      : {build_date}\n"
         f"Operating System: {get_system_info()}\n"
-        f"Dependencies    : PyInstaller {pyinstaller_version}, Py7zr {py7zr_version}, RarFile {rarfile_version}, Rich 14.2.0, 7-Zip 25.01\n"
-        f"{separator}"
+        f"Dependencies    : PyInstaller {pyinstaller_version}, Py7zr {py7zr_version}, RarFile {rarfile_version}, Rich 15.0.0, 7-Zip 26.00\n"
     )
     print(info)
 
@@ -52,7 +49,7 @@ def display_menu():
 
 def display_help():
     print(
-        "\n=== HELP MENU ===\n"
+        "\nHELP MENU\n"
         "1. Extract Addons      - Extracts GMA and BIN addon files.\n"
         "2. Extract Archives    - Extracts archive files (ZIP, RAR, 7Z, TAR, TAR.XZ, TAR.GZ, TAR.BZ2).\n"
         "3. Help                - Displays this help menu.\n"

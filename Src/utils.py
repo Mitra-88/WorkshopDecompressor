@@ -4,8 +4,8 @@ from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
-app_version = f"v2.6.1 (4e27c46)"
-build_date = "2025-12-09 (Tuesday, December 09, 2025)"
+app_version = f"v2.6.2 (4328569)"
+build_date = "2026-04-12 (Sunday, April 12)"
 
 def format_time(seconds):
     h, seconds = divmod(seconds, 3600)
@@ -28,6 +28,20 @@ def normalize_architecture(arch):
     }
     return mapping.get(arch.lower(), arch)
 
+def get_windows_feature_update():
+    if platform.system() != "Windows":
+        return None
+
+    try:
+        import winreg
+        
+        key_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path) as key:
+            display_version, _ = winreg.QueryValueEx(key, "DisplayVersion")
+            return display_version
+    except Exception:
+        return None
+
 def get_system_info():
     system = platform.system()
     arch = normalize_architecture(platform.machine())
@@ -35,7 +49,9 @@ def get_system_info():
         edition = platform.win32_edition()
         release = platform.release()
         version = platform.version()
-        return f"{system} {release} {edition} (Build {version}) {arch}".strip()
+        feature_update = get_windows_feature_update()
+        feature_part = f"{feature_update} " if feature_update else ""
+        return f"{system} {release} {feature_part}{edition} (Build {version}) {arch}".strip()
     elif system == "Linux":
         try:
             os_release = platform.freedesktop_os_release()
@@ -52,41 +68,6 @@ def get_system_info():
     elif system == "Darwin":
         mac_version, *_ = platform.mac_ver()
         return f"macOS {mac_version or platform.release()} {arch}"
-
-def get_executable_paths():
-    bin_dir = path.join('Bin', platform.system())
-    files = {'7z': '7z.exe' if platform.system() == 'Windows' else '7z',
-             'fastgmad': 'fastgmad.exe' if platform.system() == 'Windows' else 'fastgmad'}
-    result, missing = {}, []
-
-    for key, fname in files.items():
-        full = path.join(bin_dir, fname)
-        if not path.exists(full):
-            missing.append(full)
-        result[key] = full
-
-    if missing:
-        lines = [
-            "⚠️  WARNING: Some required executables are missing!",
-            "Possible reasons:",
-            " • You forgot to copy/move the 'Bin' folder into the program's directory",
-            " • An antivirus or other program removed some files",
-            "Please make sure the 'Bin' folder exists and contains:"
-        ]
-        lines += [f" • {m}" for m in missing]
-        lines.append("The program may not work correctly until this is fixed.")
-        
-        width = max(len(line) for line in lines) + 4
-        print("┌" + "─" * width + "┐")
-        for line in lines:
-            print("│ " + line.ljust(width - 2) + " │")
-        print("└" + "─" * width + "┘\n")
-        
-        confirmation = ""
-        while confirmation.lower() != "i understand":
-            confirmation = input("Type 'I understand' to continue: ").strip()
-
-    return result
 
 def unique_name(file_path):
     base, extension = path.splitext(file_path)

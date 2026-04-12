@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -28,11 +28,10 @@ jobs:
           architecture: 'arm64'
           cache: 'pip'
 
-      - name: Get Shortened Commit SHA
-        id: shorten_commit_sha
-        uses: iendeavor/shorten-commit-sha@v2.0.5
-        with:
-          length: 7
+      - name: Get short SHA
+        id: sha
+        run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        shell: bash
 
       - name: Create virtual environment
         run: python3 -m venv .venv
@@ -56,8 +55,8 @@ jobs:
           rm -f dist/Bin/Linux/7z
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
-          name: WorkshopDecompressor-${{ steps.shorten_commit_sha.outputs.shortened_commit_sha }}-macOS-ARM64
+          name: WorkshopDecompressor-${{ steps.sha.outputs.short_sha }}-macOS-ARM64
           path: dist
           compression-level: 9
