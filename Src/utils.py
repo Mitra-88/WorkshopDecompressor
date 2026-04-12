@@ -1,12 +1,11 @@
 import platform
 from uuid import uuid4
-from datetime import datetime
 from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
-app_version = f"v2.7.1 ({uuid4().hex[:7]})"
-build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d)")
+app_version = f"v2.7.1 (397f0d3)"
+build_date = "2026-04-12 (Sunday, April 12)"
 
 
 def format_time(seconds):

@@ -29,7 +29,7 @@ def display_info():
 
 def display_build_info():
     info = (
-        f"\nBuild Information:\n"
+        f"Build Information:\n"
         f"Program         : Workshop Decompressor {app_version}\n"
         f"Build Date      : {build_date}\n"
         f"Operating System: {get_system_info()}\n"
