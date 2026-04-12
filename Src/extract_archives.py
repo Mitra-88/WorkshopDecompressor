@@ -8,7 +8,12 @@ from tarfile import open as TarFile
 from os import path, makedirs, walk
 from threading import Lock
 from rich.progress import Progress, SpinnerColumn, BarColumn, TimeElapsedColumn
-from utils import format_time, unique_name, excluded_directories, remove_empty_directories
+from utils import (
+    format_time,
+    unique_name,
+    excluded_directories,
+    remove_empty_directories,
+)
 
 archive_handlers = {
     ".zip": ZipFile,
@@ -23,6 +28,7 @@ archive_handlers = {
 archive_count = {ext: 0 for ext in archive_handlers.keys()}
 count_lock = Lock()
 
+
 def warn_user():
     print("⚠️  WARNING!")
     print("Please make sure files you want to process are not open in other programs.")
@@ -32,13 +38,14 @@ def warn_user():
 
     while True:
         response = input("Do you want to continue? (y/n): ").lower().strip()
-        if response == 'y' or response == 'yes':
+        if response == "y" or response == "yes":
             return True
-        elif response == 'n' or response == 'no':
+        elif response == "n" or response == "no":
             print("Operation cancelled by user.")
             sys.exit(0)
         else:
             print("Invalid input. Please enter 'y' for yes or 'n' for no.")
+
 
 def extract_archive(archive_path):
     extension = path.splitext(archive_path)[1]
@@ -48,10 +55,10 @@ def extract_archive(archive_path):
     output_dir = unique_name(base_output_dir)
     makedirs(output_dir, exist_ok=True)
 
-    with archive_handler(archive_path, 'r') as archive:
+    with archive_handler(archive_path, "r") as archive:
         archive.extractall(output_dir)
 
-    leftover_folder = 'Leftover'
+    leftover_folder = "Leftover"
     makedirs(leftover_folder, exist_ok=True)
 
     destination_path = path.join(leftover_folder, path.basename(archive_path))
@@ -62,25 +69,31 @@ def extract_archive(archive_path):
     with count_lock:
         archive_count[extension] += 1
 
+
 def process_archives():
     archives = []
     archive_extensions = {extension[1:] for extension in archive_handlers.keys()}
 
-    for root, directories, files in walk('.'):
-        directories[:] = [directory for directory in directories if directory not in excluded_directories]
+    for root, directories, files in walk("."):
+        directories[:] = [
+            directory
+            for directory in directories
+            if directory not in excluded_directories
+        ]
         for file in files:
-            if file.split('.')[-1] in archive_extensions:
+            if file.split(".")[-1] in archive_extensions:
                 archives.append(path.join(root, file))
     return archives
+
 
 def main():
     warn_user()
     start_time = time()
 
     print("Archive Extractor")
-    
+
     print("• Formats: ZIP, RAR, 7Z, TAR, TAR.GZ, TAR.XZ, TAR.BZ2")
-    
+
     print("• Scanning for archives...")
     archives = process_archives()
     print(f"• Found {len(archives)} total archives")
@@ -95,7 +108,7 @@ def main():
         "[progress.description]{task.description}",
         BarColumn(),
         "[progress.percentage]{task.percentage:>3.0f}%",
-        TimeElapsedColumn()
+        TimeElapsedColumn(),
     ) as progress:
         task = progress.add_task("Extracting...", total=len(archives))
         for archive in archives:
@@ -104,7 +117,7 @@ def main():
 
     print("• Extraction complete")
     print("• Cleaning up...")
-    deleted_dirs_count = remove_empty_directories('.', excluded_directories)
+    deleted_dirs_count = remove_empty_directories(".", excluded_directories)
     print(f"• Removed {deleted_dirs_count} empty directories")
 
     elapsed_time = time() - start_time

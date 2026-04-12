@@ -8,16 +8,21 @@ excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 app_version = f"v2.7.0 ({uuid4().hex[:7]})"
 build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d)")
 
+
 def format_time(seconds):
     h, seconds = divmod(seconds, 3600)
     m, s = divmod(seconds, 60)
-    
+
     parts = []
-    if h: parts.append(f"{h:.0f}h")
-    if m: parts.append(f"{m:.0f}m")
-    if s or not parts: parts.append(f"{s:.3f}s")
-    
-    return ' '.join(parts)
+    if h:
+        parts.append(f"{h:.0f}h")
+    if m:
+        parts.append(f"{m:.0f}m")
+    if s or not parts:
+        parts.append(f"{s:.3f}s")
+
+    return " ".join(parts)
+
 
 def normalize_architecture(arch):
     mapping = {
@@ -28,6 +33,7 @@ def normalize_architecture(arch):
         "64bit": "64-Bit",
     }
     return mapping.get(arch.lower(), arch)
+
 
 def get_windows_feature_update():
     if platform.system() != "Windows":
@@ -42,6 +48,7 @@ def get_windows_feature_update():
             return display_version
     except Exception:
         return None
+
 
 def get_system_info():
     system = platform.system()
@@ -70,6 +77,7 @@ def get_system_info():
         mac_version, *_ = platform.mac_ver()
         return f"macOS {mac_version or platform.release()} {arch}"
 
+
 def unique_name(file_path):
     base, extension = path.splitext(file_path)
 
@@ -78,6 +86,7 @@ def unique_name(file_path):
         if not path.exists(new_name):
             print(f"Detected duplicate file/folder. Renaming to: {new_name}")
             return new_name
+
 
 def remove_empty_directories(directory, excluded=excluded_directories):
     deleted_count = 0

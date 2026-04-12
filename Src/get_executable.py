@@ -1,6 +1,7 @@
 import platform
 from os import path, scandir
 
+
 def ask_for_absolute_paths():
     print("\nBundled executables were not found.")
     print("Please provide the absolute paths manually.\n")
@@ -26,24 +27,24 @@ def ask_for_absolute_paths():
         print(f"7z: {seven_zip_path}")
         print(f"fastgmad: {fastgmad_path}")
 
-        confirm = input("\nAre you sure these paths are correct? (Y/N): ").strip().lower()
+        confirm = (
+            input("\nAre you sure these paths are correct? (Y/N): ").strip().lower()
+        )
 
         if confirm == "y":
-            return {
-                "7z": seven_zip_path,
-                "fastgmad": fastgmad_path
-            }
+            return {"7z": seven_zip_path, "fastgmad": fastgmad_path}
 
         print("\nOkay, let's try again.\n")
+
 
 def get_executable_paths():
     bin_dir = path.join("Bin", platform.system())
     system = platform.system()
 
-    if system == 'Windows':
-        executables = {'7z': '7z.exe', 'fastgmad': 'fastgmad.exe'}
+    if system == "Windows":
+        executables = {"7z": "7z.exe", "fastgmad": "fastgmad.exe"}
     else:
-        executables = {'7z': '7z', 'fastgmad': 'fastgmad'}
+        executables = {"7z": "7z", "fastgmad": "fastgmad"}
 
     found = {}
     missing = []

@@ -8,24 +8,24 @@ from py7zr import __version__ as py7zr_version
 from rarfile import __version__ as rarfile_version
 from PyInstaller import __version__ as pyinstaller_version
 
+
 def set_cli_title():
     title = f"Workshop Decompressor {app_version}"
     system = platform.system()
-    
+
     if system == "Windows":
         os.system(f"title {title}")
     else:
         sys.stdout.write(f"\033]0;{title}\007")
         sys.stdout.flush()
 
+
 set_cli_title()
 
+
 def display_info():
-    print(
-        f"{'=' * 40}\n"
-        f"Workshop Decompressor {app_version}.\n"
-        f"{'=' * 40}\n"
-    )
+    print(f"{'=' * 40}\nWorkshop Decompressor {app_version}.\n{'=' * 40}\n")
+
 
 def display_build_info():
     info = (
@@ -37,6 +37,7 @@ def display_build_info():
     )
     print(info)
 
+
 def display_menu():
     print(
         "Select an option:\n"
@@ -46,6 +47,7 @@ def display_menu():
         "4. Build Info\n"
         "5. Exit\n"
     )
+
 
 def display_help():
     print(
@@ -57,6 +59,7 @@ def display_help():
         "5. Exit                - Closes the application.\n"
     )
 
+
 def handle_choice(user_input):
     def invalid_choice():
         print("Invalid choice: Please select 1-5")
@@ -66,11 +69,12 @@ def handle_choice(user_input):
         "2": extract_archives,
         "3": display_help,
         "4": display_build_info,
-        "5": sys.exit
+        "5": sys.exit,
     }
-    
+
     action = options.get(user_input, invalid_choice)
     action()
+
 
 def main():
     try:
@@ -81,6 +85,7 @@ def main():
     except (KeyboardInterrupt, EOFError):
         print("\nExiting...")
         sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
