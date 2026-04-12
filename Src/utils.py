@@ -5,7 +5,7 @@ from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
-app_version = f"v2.6.2 ({uuid4().hex[:7]})"
+app_version = f"v2.7.0 ({uuid4().hex[:7]})"
 build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d)")
 
 def format_time(seconds):
@@ -35,7 +35,7 @@ def get_windows_feature_update():
 
     try:
         import winreg
-        
+
         key_path = r"SOFTWARE\Microsoft\Windows NT\CurrentVersion"
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path) as key:
             display_version, _ = winreg.QueryValueEx(key, "DisplayVersion")
