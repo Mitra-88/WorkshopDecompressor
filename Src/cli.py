@@ -8,24 +8,24 @@ from py7zr import __version__ as py7zr_version
 from rarfile import __version__ as rarfile_version
 from PyInstaller import __version__ as pyinstaller_version
 
+
 def set_cli_title():
     title = f"Workshop Decompressor {app_version}"
     system = platform.system()
-    
+
     if system == "Windows":
         os.system(f"title {title}")
     else:
         sys.stdout.write(f"\033]0;{title}\007")
         sys.stdout.flush()
 
+
 set_cli_title()
 
+
 def display_info():
-    print(
-        f"{'=' * 40}\n"
-        f"Workshop Decompressor {app_version}.\n"
-        f"{'=' * 40}\n"
-    )
+    print(f"{'=' * 40}\nWorkshop Decompressor {app_version}.\n{'=' * 40}\n")
+
 
 def display_build_info():
     info = (
@@ -37,25 +37,36 @@ def display_build_info():
     )
     print(info)
 
+
 def display_menu():
     print(
-        "Select an option:\n"
+        "\nMAIN MENU\n"
+        "────────────────────\n"
         "1. Extract addons\n"
         "2. Extract archives\n"
         "3. Help\n"
         "4. Build Info\n"
         "5. Exit\n"
+        "────────────────────\n"
     )
+
 
 def display_help():
     print(
         "\nHELP MENU\n"
-        "1. Extract Addons      - Extracts GMA and BIN addon files.\n"
-        "2. Extract Archives    - Extracts archive files (ZIP, RAR, 7Z, TAR, TAR.XZ, TAR.GZ, TAR.BZ2).\n"
-        "3. Help                - Displays this help menu.\n"
-        "4. Build Info          - Shows detailed build information about the program.\n"
-        "5. Exit                - Closes the application.\n"
+        "────────────────────────\n"
+        "1. Extract Addons   - Extract GMA and BIN addon files\n"
+        "2. Extract Archives - Extract ZIP, RAR, 7Z, TAR files\n"
+        "3. Help             - Show this menu\n"
+        "4. Build Info      - Show system + build info\n"
+        "5. Exit             - Close program\n"
+        "────────────────────────\n"
     )
+
+
+def pause():
+    input("\nPress ENTER to return to menu...")
+
 
 def handle_choice(user_input):
     def invalid_choice():
@@ -66,11 +77,15 @@ def handle_choice(user_input):
         "2": extract_archives,
         "3": display_help,
         "4": display_build_info,
-        "5": sys.exit
+        "5": sys.exit,
     }
-    
+
     action = options.get(user_input, invalid_choice)
     action()
+
+    if user_input != "5":
+        pause()
+
 
 def main():
     try:
@@ -81,6 +96,7 @@ def main():
     except (KeyboardInterrupt, EOFError):
         print("\nExiting...")
         sys.exit(0)
+
 
 if __name__ == "__main__":
     main()
