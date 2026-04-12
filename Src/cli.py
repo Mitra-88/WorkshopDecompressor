@@ -40,24 +40,32 @@ def display_build_info():
 
 def display_menu():
     print(
-        "Select an option:\n"
+        "\nMAIN MENU\n"
+        "────────────────────\n"
         "1. Extract addons\n"
         "2. Extract archives\n"
         "3. Help\n"
         "4. Build Info\n"
         "5. Exit\n"
+        "────────────────────\n"
     )
 
 
 def display_help():
     print(
         "\nHELP MENU\n"
-        "1. Extract Addons      - Extracts GMA and BIN addon files.\n"
-        "2. Extract Archives    - Extracts archive files (ZIP, RAR, 7Z, TAR, TAR.XZ, TAR.GZ, TAR.BZ2).\n"
-        "3. Help                - Displays this help menu.\n"
-        "4. Build Info          - Shows detailed build information about the program.\n"
-        "5. Exit                - Closes the application.\n"
+        "────────────────────────\n"
+        "1. Extract Addons   - Extract GMA and BIN addon files\n"
+        "2. Extract Archives - Extract ZIP, RAR, 7Z, TAR files\n"
+        "3. Help             - Show this menu\n"
+        "4. Build Info      - Show system + build info\n"
+        "5. Exit             - Close program\n"
+        "────────────────────────\n"
     )
+
+
+def pause():
+    input("\nPress ENTER to return to menu...")
 
 
 def handle_choice(user_input):
@@ -74,6 +82,9 @@ def handle_choice(user_input):
 
     action = options.get(user_input, invalid_choice)
     action()
+
+    if user_input != "5":
+        pause()
 
 
 def main():

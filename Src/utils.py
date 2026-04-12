@@ -5,7 +5,7 @@ from os import scandir, rmdir, path
 
 excluded_directories = {"Bin", "Leftover", "_internal", "Extracted-Addons"}
 
-app_version = f"v2.7.0 ({uuid4().hex[:7]})"
+app_version = f"v2.7.1 ({uuid4().hex[:7]})"
 build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d)")
 
 
