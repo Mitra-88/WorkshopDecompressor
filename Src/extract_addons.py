@@ -57,7 +57,15 @@ def extract_bin_file(bin_file, seven_zip_path):
     base_folder = path.join(path.dirname(bin_file), "Extracted-Bin")
     extract_directory = unique_name(base_folder)
     makedirs(extract_directory, exist_ok=True)
-    run([seven_zip_path, "x", bin_file, "-o" + extract_directory], stdout=DEVNULL, stderr=DEVNULL)
+    
+    result = run(
+        [seven_zip_path, "x", bin_file, f"-o{extract_directory}", "-y"], stdout=DEVNULL, stderr=DEVNULL
+    )
+
+    if result.returncode >= 2:
+        if not os.listdir(extract_directory):
+            print(f"\nFailed to extract {path.basename(bin_file)} (Error Code: {result.returncode})")
+    
     with count_lock:
         addon_formats_count[".bin"] += 1
 
@@ -66,7 +74,14 @@ def extract_gma_file(gma_file, fastgmad_path):
     base_folder = path.join("Extracted-Addons", "Addon")
     addon_folder = unique_name(base_folder)
     makedirs(addon_folder, exist_ok=True)
-    run([fastgmad_path, "extract", "-file", gma_file, "-out", addon_folder], stdout=DEVNULL, stderr=DEVNULL)
+    
+    result = run(
+        [fastgmad_path, "extract", "-file", gma_file, "-out", addon_folder], stdout=DEVNULL, stderr=DEVNULL
+    )
+
+    if result.returncode != 0:
+        print(f"\nFailed to extract {path.basename(gma_file)} (Error Code: {result.returncode})")
+        
     with count_lock:
         addon_formats_count[".gma"] += 1
 
