@@ -84,7 +84,6 @@ def unique_name(file_path):
     while True:
         new_name = f"{base}-{uuid4().hex[:7]}{extension}"
         if not path.exists(new_name):
-            print(f"Detected duplicate file/folder. Renaming to: {new_name}")
             return new_name
 
 
