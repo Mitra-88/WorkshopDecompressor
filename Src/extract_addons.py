@@ -1,12 +1,11 @@
 import os
-import sys
 import stat
+import sys
 from time import time
+from pathlib import Path
 from shutil import move
 from subprocess import run, DEVNULL
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from os import path, scandir, rename, makedirs, cpu_count
-from threading import Lock
 from rich.progress import (
     Progress,
     SpinnerColumn,
@@ -23,79 +22,72 @@ from utils import (
 )
 from get_executable import get_executable_paths
 
-count_lock = Lock()
-addon_formats_count = {".bin": 0, ".gma": 0}
+MAX_WORKERS = 32
+system_cores = os.cpu_count() or 2
+workers = min(MAX_WORKERS, max(1, system_cores - 2))
 
 
-def find_files_with_extension(extension, start_dir):
-    files = []
-    for entry in scandir(start_dir):
-        if entry.is_dir() and entry.name not in excluded_directories:
-            files.extend(find_files_with_extension(extension, entry.path))
-        elif entry.is_file() and entry.name.endswith(extension):
-            files.append(entry.path)
-    return files
+def find_files_with_extension(extension, start_dir="."):
+    result = []
+    for root, dirnames, filenames in Path(start_dir).walk():
+        dirnames[:] = [d for d in dirnames if d not in excluded_directories]
+        for filename in filenames:
+            if filename.lower().endswith(extension):
+                result.append(str(root / filename))
+    return result
 
 
-def add_extension_to_files_without_format(start_dir):
-    renamed_count = 0
-    for entry in scandir(start_dir):
-        if entry.is_dir() and entry.name not in excluded_directories:
-            renamed_count += add_extension_to_files_without_format(entry.path)
-        elif (
-            entry.is_file()
-            and "." not in entry.name
-            and entry.name not in ["WorkshopDecompressor"]
-        ):
-            new_path = entry.path + ".gma"
-            rename(entry.path, new_path)
-            renamed_count += 1
-    return renamed_count
+def add_extension_to_files_without_format(start_dir="."):
+    renamed = 0
+    for root, dirnames, filenames in Path(start_dir).walk():
+        dirnames[:] = [d for d in dirnames if d not in excluded_directories]
+        for filename in filenames:
+            if "." not in filename and filename != "WorkshopDecompressor":
+                src = root / filename
+                src.rename(src.with_suffix(".gma"))
+                renamed += 1
+    return renamed
 
 
 def extract_bin_file(bin_file, seven_zip_path):
-    base_folder = path.join(path.dirname(bin_file), "Extracted-Bin")
-    extract_directory = unique_name(base_folder)
-    makedirs(extract_directory, exist_ok=True)
-    
+    extract_dir = unique_name(Path(bin_file).parent / "Extracted-Bin")
+    extract_dir.mkdir(parents=True, exist_ok=True)
+
     result = run(
-        [seven_zip_path, "x", bin_file, f"-o{extract_directory}", "-y"], stdout=DEVNULL, stderr=DEVNULL
+        [seven_zip_path, "x", bin_file, f"-o{extract_dir}", "-y"],
+        stdout=DEVNULL,
+        stderr=DEVNULL,
     )
 
-    if result.returncode >= 2:
-        if not os.listdir(extract_directory):
-            print(f"\nFailed to extract {path.basename(bin_file)} (Error Code: {result.returncode})")
-    
-    with count_lock:
-        addon_formats_count[".bin"] += 1
+    if result.returncode >= 2 and not any(extract_dir.iterdir()):
+        print(f"\nFailed to extract {Path(bin_file).name} (Error Code: {result.returncode})")
 
 
 def extract_gma_file(gma_file, fastgmad_path):
-    base_folder = path.join("Extracted-Addons", "Addon")
-    addon_folder = unique_name(base_folder)
-    makedirs(addon_folder, exist_ok=True)
-    
+    addon_dir = unique_name(Path("Extracted-Addons") / "Addon")
+    addon_dir.mkdir(parents=True, exist_ok=True)
+
     result = run(
-        [fastgmad_path, "extract", "-file", gma_file, "-out", addon_folder], stdout=DEVNULL, stderr=DEVNULL
+        [fastgmad_path, "extract", "-file", gma_file, "-out", str(addon_dir)],
+        stdout=DEVNULL,
+        stderr=DEVNULL,
     )
 
     if result.returncode != 0:
-        print(f"\nFailed to extract {path.basename(gma_file)} (Error Code: {result.returncode})")
-        
-    with count_lock:
-        addon_formats_count[".gma"] += 1
+        print(f"\nFailed to extract {Path(gma_file).name} (Error Code: {result.returncode})")
 
 
 def move_files_to_leftover(files, leftover_dir):
-    makedirs(leftover_dir, exist_ok=True)
-    moved_count = 0
+    leftover = Path(leftover_dir)
+    leftover.mkdir(parents=True, exist_ok=True)
+    moved = 0
     for file in files:
-        destination = path.join(leftover_dir, path.basename(file))
-        if path.exists(destination):
-            destination = unique_name(destination)
-        move(file, destination)
-        moved_count += 1
-    return moved_count
+        dest = leftover / Path(file).name
+        if dest.exists():
+            dest = unique_name(dest)
+        move(file, dest)
+        moved += 1
+    return moved
 
 
 def warn_user():
@@ -110,13 +102,12 @@ def warn_user():
 
     while True:
         response = input("Continue? (y/n): ").lower().strip()
-        if response in ["y", "yes"]:
-            return True
-        elif response in ["n", "no"]:
+        if response in ("y", "yes"):
+            return
+        if response in ("n", "no"):
             print("Operation cancelled.")
             sys.exit(0)
-        else:
-            print("Invalid input. Please enter 'y' or 'n'.")
+        print("Invalid input. Please enter 'y' or 'n'.")
 
 
 def main():
@@ -129,20 +120,17 @@ def main():
     seven_zip_path = exec_paths["7z"]
     fastgmad_path = exec_paths["fastgmad"]
 
-    os.chmod(seven_zip_path, os.stat(seven_zip_path).st_mode | stat.S_IEXEC)
-    os.chmod(fastgmad_path, os.stat(fastgmad_path).st_mode | stat.S_IEXEC)
+    for exe in (seven_zip_path, fastgmad_path):
+        os.chmod(exe, os.stat(exe).st_mode | stat.S_IEXEC)
 
-    base_extract_dir = path.join("Extracted-Addons")
-    makedirs(base_extract_dir, exist_ok=True)
+    Path("Extracted-Addons").mkdir(exist_ok=True)
 
     print("\n[2/5] Scanning for .bin files...")
-    bin_files = find_files_with_extension(".bin", ".")
+    bin_files = find_files_with_extension(".bin")
     print(f"Found {len(bin_files)} .bin files")
 
-    if not bin_files:
-        print("No .bin files found.")
-    else:
-        workers = max(1, cpu_count() - 2)
+    bin_count = 0
+    if bin_files:
         print(f"\n[3/5] Extracting .bin files ({workers} workers)...")
 
         with Progress(
@@ -153,26 +141,32 @@ def main():
         ) as progress:
             task = progress.add_task("bin", total=len(bin_files))
             with ThreadPoolExecutor(max_workers=workers) as executor:
-                futures = [
-                    executor.submit(extract_bin_file, f, seven_zip_path)
+                futures = {
+                    executor.submit(extract_bin_file, f, seven_zip_path): f
                     for f in bin_files
-                ]
-                for _ in as_completed(futures):
+                }
+                for future in as_completed(futures):
+                    file_path = futures[future]
+                    try:
+                        future.result()
+                        bin_count += 1
+                    except OSError as exc:
+                        print(f"\nError processing {Path(file_path).name}: {exc}")
                     progress.advance(task)
+    else:
+        print("No .bin files found.")
 
     print("\n[4/5] Fixing missing extensions...")
-    renamed_count = add_extension_to_files_without_format(".")
+    renamed_count = add_extension_to_files_without_format()
     if renamed_count:
         print(f"Fixed {renamed_count} files")
 
     print("\n[5/5] Scanning .gma files...")
-    gma_files = find_files_with_extension(".gma", ".")
+    gma_files = find_files_with_extension(".gma")
     print(f"Found {len(gma_files)} .gma files")
 
-    if not gma_files:
-        print("No .gma files found.")
-    else:
-        workers = max(1, cpu_count() - 2)
+    gma_count = 0
+    if gma_files:
 
         with Progress(
             SpinnerColumn(),
@@ -182,19 +176,26 @@ def main():
         ) as progress:
             task = progress.add_task("gma", total=len(gma_files))
             with ThreadPoolExecutor(max_workers=workers) as executor:
-                futures = [
-                    executor.submit(extract_gma_file, f, fastgmad_path)
+                futures = {
+                    executor.submit(extract_gma_file, f, fastgmad_path): f
                     for f in gma_files
-                ]
-                for _ in as_completed(futures):
+                }
+                for future in as_completed(futures):
+                    file_path = futures[future]
+                    try:
+                        future.result()
+                        gma_count += 1
+                    except OSError as exc:
+                        print(f"\nError processing {Path(file_path).name}: {exc}")
                     progress.advance(task)
+    else:
+        print("No .gma files found.")
 
     print("\nMoving processed files...")
-    all_processed_files = bin_files + gma_files
-    moved_count = move_files_to_leftover(all_processed_files, "Leftover")
+    moved_count = move_files_to_leftover(bin_files + gma_files, "Leftover")
 
     print("Cleaning empty directories...")
-    deleted_dirs_count = remove_empty_directories(".", excluded_directories)
+    _ = remove_empty_directories(".")
 
     elapsed_time = time() - start_time
     formatted_time = format_time(elapsed_time)
@@ -203,9 +204,9 @@ def main():
     print("✅ PROCESS COMPLETE")
     print("━━━━━━━━━━━━━━━━━━━━━━")
     print(f"Time: {formatted_time}")
-    print(f".bin files: {addon_formats_count['.bin']}")
-    print(f".gma files: {addon_formats_count['.gma']}")
+    print(f".bin files: {bin_count}")
+    print(f".gma files: {gma_count}")
     print(f"Renamed: {renamed_count}")
-    print(f"Output: {base_extract_dir}")
+    print("Output: Extracted-Addons")
     print(f"Moved: {moved_count}")
     print("━━━━━━━━━━━━━━━━━━━━━━")

@@ -1,12 +1,11 @@
 import sys
 from time import time
+from pathlib import Path
 from shutil import move
 from zipfile import ZipFile
 from rarfile import RarFile
 from py7zr import SevenZipFile
 from tarfile import open as TarFile
-from os import path, makedirs, walk
-from threading import Lock
 from rich.progress import Progress, SpinnerColumn, BarColumn, TimeElapsedColumn
 
 from utils import (
@@ -16,7 +15,7 @@ from utils import (
     remove_empty_directories,
 )
 
-archive_handlers = {
+ARCHIVE_HANDLERS = {
     ".zip": ZipFile,
     ".rar": RarFile,
     ".7z": SevenZipFile,
@@ -26,8 +25,7 @@ archive_handlers = {
     ".bz2": TarFile,
 }
 
-archive_count = {ext: 0 for ext in archive_handlers.keys()}
-count_lock = Lock()
+ARCHIVE_EXTENSIONS = frozenset(ARCHIVE_HANDLERS.keys())
 
 
 def warn_user():
@@ -39,47 +37,37 @@ def warn_user():
 
     while True:
         response = input("Continue? (y/n): ").lower().strip()
-        if response in ["y", "yes"]:
-            return True
-        elif response in ["n", "no"]:
+        if response in ("y", "yes"):
+            return
+        if response in ("n", "no"):
             print("Cancelled.")
             sys.exit(0)
-        else:
-            print("Invalid input.")
+        print("Invalid input.")
 
 
-def extract_archive(archive_path):
-    extension = path.splitext(archive_path)[1]
-    archive_handler = archive_handlers.get(extension)
+def extract_archive(archive_path, leftover_dir):
+    extension = archive_path.suffix.lower()
+    handler = ARCHIVE_HANDLERS[extension]
 
-    base_output_dir = path.splitext(path.basename(archive_path))[0]
-    output_dir = unique_name(base_output_dir)
-    makedirs(output_dir, exist_ok=True)
+    output_dir = unique_name(archive_path.stem)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-    with archive_handler(archive_path, "r") as archive:
+    with handler(str(archive_path), "r") as archive:
         archive.extractall(output_dir)
 
-    leftover_folder = "Leftover"
-    makedirs(leftover_folder, exist_ok=True)
-
-    destination_path = path.join(leftover_folder, path.basename(archive_path))
-    if path.exists(destination_path):
-        destination_path = unique_name(destination_path)
-    move(archive_path, destination_path)
-
-    with count_lock:
-        archive_count[extension] += 1
+    dest = leftover_dir / archive_path.name
+    if dest.exists():
+        dest = unique_name(dest)
+    move(archive_path, dest)
 
 
-def process_archives():
+def find_archives():
     archives = []
-    archive_extensions = {extension[1:] for extension in archive_handlers.keys()}
-
-    for root, directories, files in walk("."):
-        directories[:] = [d for d in directories if d not in excluded_directories]
-        for file in files:
-            if file.split(".")[-1] in archive_extensions:
-                archives.append(path.join(root, file))
+    for root, dirnames, filenames in Path(".").walk():
+        dirnames[:] = [d for d in dirnames if d not in excluded_directories]
+        for filename in filenames:
+            if Path(filename).suffix.lower() in ARCHIVE_EXTENSIONS:
+                archives.append(root / filename)
     return archives
 
 
@@ -88,7 +76,7 @@ def main():
     start_time = time()
 
     print("\nScanning archives...")
-    archives = process_archives()
+    archives = find_archives()
     print(f"Found {len(archives)} archives")
 
     if not archives:
@@ -96,6 +84,8 @@ def main():
         return
 
     print("\nExtracting archives...")
+    leftover_dir = Path("Leftover")
+    leftover_dir.mkdir(exist_ok=True)
 
     with Progress(
         SpinnerColumn(),
@@ -105,21 +95,19 @@ def main():
     ) as progress:
         task = progress.add_task("processing", total=len(archives))
         for archive in archives:
-            extract_archive(archive)
+            extract_archive(archive, leftover_dir)
             progress.advance(task)
 
     print("\nCleaning up...")
-    deleted_dirs_count = remove_empty_directories(".", excluded_directories)
+    deleted_dirs_count = remove_empty_directories(".")
 
     elapsed_time = time() - start_time
     formatted_time = format_time(elapsed_time)
-
-    total_processed = sum(archive_count.values())
 
     print("\n━━━━━━━━━━━━━━━━━━━━━━")
     print("✅ COMPLETE")
     print("━━━━━━━━━━━━━━━━━━━━━━")
     print(f"Time: {formatted_time}")
-    print(f"Processed: {total_processed}")
+    print(f"Processed: {len(archives)}")
     print(f"Directories cleaned: {deleted_dirs_count}")
     print("━━━━━━━━━━━━━━━━━━━━━━")
