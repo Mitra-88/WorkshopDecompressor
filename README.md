@@ -16,11 +16,13 @@
 **RAM Usage:** 30MB<br>
 **Disk Space:** 40MB
 
-| Operating System | Supported Versions                                         | Architecture |
-|------------------|------------------------------------------------------------|--------------|
-| Windows          | 11, 10 (1809 or later)                                     | 64-Bit       |
-| GNU/Linux        | Debian 13, Ubuntu 24.04.4, Fedora 43, Arch Linux, OpenSUSE | 64-Bit       |
-| macOS            | 26, 15, 14, 13, 12                                         | ARM64        |
+| Operating System | Supported Versions                                         | Architecture | Tested |
+|------------------|------------------------------------------------------------|--------------|--------|
+| Windows          | 11, 10 (1809 or later)                                     | 64-Bit       |   ✅   |
+| GNU/Linux        | Debian 13, Ubuntu 26.04, Fedora 44, Arch Linux, OpenSUSE   | 64-Bit       |   ✅   |
+| macOS            | 27, 26, 15, 14, 13, 12                                     | ARM64        |   ❌   |
+
+> **macOS:** Built for Apple Silicon. I don't own a Mac to verify, but it should work.
 
 ## How to Install
 
