@@ -38,7 +38,7 @@ Drop the Workshop Decompressor into this folder:
 `steamcmd/steamapps/workshop/content/4000`
 That’s where all your downloaded GMod addons live.
 
-<img src="Src/Assets/Screenshot-1.png" alt="Example">
+<img src="Assets/Screenshot-1.png" alt="Example-1">
 
 **If you use anything else (web downloads, random folders, cracked GMod, etc.):**
 Put Workshop Decompressor in the same folder where your `.gma`, `.bin`, or archive files are.
@@ -46,7 +46,7 @@ Put Workshop Decompressor in the same folder where your `.gma`, `.bin`, or archi
 That’s it.
 The program scans **the folder it’s in** and **every subfolder**, automatically.
 
-<img src="Src/Assets/Screenshot-2.png" alt="Example">
+<img src="Assets/Screenshot-2.png" alt="Example-2">
 
 ### Step 2: Run Workshop Decompressor
 
