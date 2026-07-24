@@ -61,7 +61,7 @@ cd WorkshopDecompressor
 py -m venv .venv
 .venv/Scripts/activate
 pip install -r requirements.txt
-pyinstaller --noconfirm --onefile --console --icon "Src/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/extract_addons.py;." --add-data "Src/extract_archives.py;." --add-data "Src/utils.py;." --add-data "Src/get_executable.py;."  "Src/cli.py"
+pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/Core/extract_addons.py;." --add-data "Src/Core/extract_archives.py;." --add-data "Src/Core/utils.py;." --add-data "Src/Core/get_executable.py;."  "Src/Core/cli.py"
 Copy-Item -Path "Src/Bin" -Destination "dist" -Recurse -Force
 ```
 
@@ -73,6 +73,6 @@ cd WorkshopDecompressor
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pyinstaller --noconfirm --onefile --console --name "WorkshopDecompressor" --strip --clean --optimize "2" --add-data "Src/extract_addons.py:." --add-data "Src/extract_archives.py:." --add-data "Src/utils.py:." --add-data "Src/get_executable.py:."  "Src/cli.py"
+pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/Core/extract_addons.py:." --add-data "Src/Core/extract_archives.py:." --add-data "Src/Core/utils.py:." --add-data "Src/Core/get_executable.py:."  "Src/Core/cli.py"
 cp -r Src/Bin dist/
 ```
