@@ -1,91 +1,38 @@
-import platform
+import logging
 import sys
 
+import ui
 from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
 from py7zr import __version__ as py7zr_version
 from PyInstaller import __version__ as pyinstaller_version
 from rarfile import __version__ as rarfile_version
-from rich.console import Console
-from rich.panel import Panel
-from rich.prompt import Prompt
-from rich.table import Table
 from utils import app_version, build_date, get_system_info
 
-console = Console()
+logger = logging.getLogger("workshop.cli")
+
+MENU_ITEMS = (
+    ("1", "Extract Addons", "Extract GMA and BIN addon files"),
+    ("2", "Extract Archives", "Extract ZIP, RAR, 7Z, TAR files"),
+    ("3", "Help", "Show help menu"),
+    ("4", "Build Info", "Show system and build info"),
+    ("5", "Exit", "Close program"),
+)
 
 
-def set_cli_title():
-    title = f"Workshop Decompressor {app_version}"
-    system = platform.system()
-
-    if system == "Windows":
-        import ctypes
-        ctypes.windll.kernel32.SetConsoleTitleW(title)
-    else:
-        sys.stdout.write(f"\033]0;{title}\007")
-        sys.stdout.flush()
-
-
-def display_info():
-    console.print(Panel.fit(
-        f"[bold cyan]Workshop Decompressor[/] [dim]{app_version}[/]",
-        border_style="cyan"
-    ))
-
-
-def display_build_info():
-    table = Table(show_header=False, box=None, padding=(0, 1))
-    table.add_column(style="bold cyan", no_wrap=True)
-    table.add_column(style="white")
-
-    table.add_row("Program", f"Workshop Decompressor {app_version}")
-    table.add_row("Build Date", build_date)
-    table.add_row("Operating System", get_system_info())
-    table.add_row("Dependencies", f"PyInstaller {pyinstaller_version}, Py7zr {py7zr_version}, RarFile {rarfile_version}, Rich 15.0.0, 7-Zip 26.02")
-
-    console.print(Panel(
-        table,
-        title="[bold cyan]BUILD INFORMATION[/]",
-        border_style="cyan",
-        expand=False
-    ))
-
-
-def display_menu():
-    menu_text = (
-        "[1] [bold]Extract Addons[/]      [dim]Extract GMA and BIN addon files[/]\n"
-        "[2] [bold]Extract Archives[/]    [dim]Extract ZIP, RAR, 7Z, TAR files[/]\n"
-        "[3] [bold]Help[/]                [dim]Show help menu[/]\n"
-        "[4] [bold]Build Info[/]          [dim]Show system and build info[/]\n"
-        "[5] [bold]Exit[/]                [dim]Close program[/]"
-    )
-    console.print(Panel(
-        menu_text,
-        title="[bold cyan]MAIN MENU[/]",
-        border_style="cyan",
-        expand=False
-    ))
-
-
-def display_help():
-    help_text = (
-        "[1] Extract Addons   - Extract GMA and BIN addon files\n"
-        "[2] Extract Archives - Extract ZIP, RAR, 7Z, TAR files\n"
-        "[3] Help             - Show this menu\n"
-        "[4] Build Info       - Show system + build info\n"
-        "[5] Exit             - Close program"
-    )
-    console.print(Panel(
-        help_text,
-        title="[bold cyan]HELP MENU[/]",
-        border_style="cyan",
-        expand=False
-    ))
-
-
-def pause():
-    console.input("\n[dim]Press ENTER to return to menu...[/]")
+def _build_info():
+    return {
+        "Program": f"Workshop Decompressor {app_version}",
+        "Build Date": build_date,
+        "Operating System": get_system_info(),
+        "Dependencies": (
+            f"PyInstaller {pyinstaller_version}, "
+            f"Py7zr {py7zr_version}, "
+            f"RarFile {rarfile_version}, "
+            f"Rich 15.0.0, "
+            "7-Zip 26.02"
+        ),
+    }
 
 
 def handle_choice(choice):
@@ -95,34 +42,45 @@ def handle_choice(choice):
         case "2":
             extract_archives()
         case "3":
-            display_help()
+            ui.render_help(MENU_ITEMS)
         case "4":
-            display_build_info()
+            ui.render_build_info(_build_info())
         case "5":
-            console.print("\n[bold green]Exiting... Goodbye![/]\n")
+            ui.render_message("Exiting... Goodbye!", "success")
             sys.exit(0)
 
-    pause()
+    ui.pause()
 
 
 def main():
-    set_cli_title()
+    ui.configure_logging()
+    ui.set_cli_title(f"Workshop Decompressor {app_version}")
+
     try:
-        display_info()
+        ui.render_banner(app_version)
+
         while True:
-            console.print()
-            display_menu()
-            
-            choice = Prompt.ask(
-                "[bold yellow]Select an option[/]",
-                choices=["1", "2", "3", "4", "5"],
-                show_choices=False
-            )
-            console.print()
-            handle_choice(choice)
-            
+            ui.render_spacer()
+            ui.render_menu(MENU_ITEMS)
+
+            choice = ui.prompt_choice(("1", "2", "3", "4", "5"))
+
+            ui.render_spacer()
+
+            try:
+                handle_choice(choice)
+            except SystemExit:
+                raise
+            except Exception:
+                logger.error(
+                    "Something failed unexpectedly. "
+                    "Check that files are accessible and required tools are available."
+                )
+                ui.pause()
+
     except (KeyboardInterrupt, EOFError):
-        console.print("\n[bold red]Force quitting...[/]\n")
+        ui.render_spacer()
+        ui.render_message("Force quitting...", "error")
         sys.exit(0)
 
 
