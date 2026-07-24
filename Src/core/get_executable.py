@@ -1,9 +1,10 @@
 import platform
 from pathlib import Path
+
 from rich.console import Console
 from rich.panel import Panel
+from rich.prompt import Confirm, Prompt
 from rich.table import Table
-from rich.prompt import Prompt, Confirm
 
 console = Console()
 
@@ -104,7 +105,7 @@ def get_executable_paths():
     console.print(table)
 
     if not missing:
-        console.print("\n[bold green]✨ Success! All required tools were found automatically.[/]\n")
+        console.print("\n[bold green]Success! All required tools were found automatically.[/]\n")
         return found
 
     panel_content = (

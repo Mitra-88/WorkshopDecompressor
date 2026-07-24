@@ -1,8 +1,8 @@
 import platform
-from os import scandir, rmdir
+from datetime import datetime
+from os import rmdir, scandir
 from pathlib import Path
 from uuid import uuid4
-from datetime import datetime
 
 excluded_directories = frozenset({"Bin", "Leftover", "_internal", "Extracted-Addons"})
 
@@ -81,10 +81,14 @@ def get_system_info():
 
 def unique_name(file_path):
     p = Path(file_path)
+    if not p.exists():
+        return p
+    counter = 1
     while True:
-        candidate = p.with_name(f"{p.stem}-{uuid4().hex[:7]}{p.suffix}")
+        candidate = p.with_name(f"{p.stem}-{counter}{p.suffix}")
         if not candidate.exists():
             return candidate
+        counter += 1
 
 
 def remove_empty_directories(directory, excluded=excluded_directories):

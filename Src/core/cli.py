@@ -1,17 +1,16 @@
-import sys
 import platform
-
-from rich.console import Console
-from rich.panel import Panel
-from rich.table import Table
-from rich.prompt import Prompt
+import sys
 
 from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
-from utils import get_system_info, app_version, build_date
 from py7zr import __version__ as py7zr_version
-from rarfile import __version__ as rarfile_version
 from PyInstaller import __version__ as pyinstaller_version
+from rarfile import __version__ as rarfile_version
+from rich.console import Console
+from rich.panel import Panel
+from rich.prompt import Prompt
+from rich.table import Table
+from utils import app_version, build_date, get_system_info
 
 console = Console()
 

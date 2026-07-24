@@ -1,19 +1,14 @@
-import sys
-from time import time
 from pathlib import Path
 from shutil import move
-from zipfile import ZipFile
-from rarfile import RarFile
-from py7zr import SevenZipFile
 from tarfile import open as TarFile
-from rich.progress import Progress, SpinnerColumn, BarColumn, TimeElapsedColumn
+from time import time
+from zipfile import ZipFile
 
-from utils import (
-    format_time,
-    unique_name,
-    excluded_directories,
-    remove_empty_directories,
-)
+from py7zr import SevenZipFile
+from rarfile import RarFile
+from rich.progress import BarColumn, Progress, SpinnerColumn, TimeElapsedColumn
+from utils import (excluded_directories, format_time, remove_empty_directories,
+                   unique_name)
 
 ARCHIVE_HANDLERS = {
     ".zip": ZipFile,
@@ -38,10 +33,10 @@ def warn_user():
     while True:
         response = input("Continue? (y/n): ").lower().strip()
         if response in ("y", "yes"):
-            return
+            return True
         if response in ("n", "no"):
             print("Cancelled.")
-            sys.exit(0)
+            return False
         print("Invalid input.")
 
 
@@ -72,9 +67,8 @@ def find_archives():
 
 
 def main():
-    warn_user()
-    start_time = time()
-
+    if not warn_user():
+        return
     print("\nScanning archives...")
     archives = find_archives()
     print(f"Found {len(archives)} archives")
@@ -86,6 +80,7 @@ def main():
     print("\nExtracting archives...")
     leftover_dir = Path("Leftover")
     leftover_dir.mkdir(exist_ok=True)
+    start_time = time()
 
     with Progress(
         SpinnerColumn(),
@@ -98,10 +93,11 @@ def main():
             extract_archive(archive, leftover_dir)
             progress.advance(task)
 
+    elapsed_time = time() - start_time
+
     print("\nCleaning up...")
     deleted_dirs_count = remove_empty_directories(".")
 
-    elapsed_time = time() - start_time
     formatted_time = format_time(elapsed_time)
 
     print("\n━━━━━━━━━━━━━━━━━━━━━━")

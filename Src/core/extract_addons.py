@@ -1,26 +1,16 @@
 import os
 import stat
-import sys
-from time import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from shutil import move
-from subprocess import run, DEVNULL
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from rich.progress import (
-    Progress,
-    SpinnerColumn,
-    BarColumn,
-    TextColumn,
-    TimeElapsedColumn,
-)
+from subprocess import DEVNULL, run
+from time import time
 
-from utils import (
-    format_time,
-    unique_name,
-    excluded_directories,
-    remove_empty_directories,
-)
 from get_executable import get_executable_paths
+from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn,
+                           TimeElapsedColumn)
+from utils import (excluded_directories, format_time, remove_empty_directories,
+                   unique_name)
 
 MAX_WORKERS = 32
 system_cores = os.cpu_count() or 2
@@ -103,15 +93,16 @@ def warn_user():
     while True:
         response = input("Continue? (y/n): ").lower().strip()
         if response in ("y", "yes"):
-            return
+            return True
         if response in ("n", "no"):
             print("Operation cancelled.")
-            sys.exit(0)
+            return False
         print("Invalid input. Please enter 'y' or 'n'.")
 
 
 def main():
-    warn_user()
+    if not warn_user():
+        return
     start_time = time()
 
     print("\n[1/5] Setting up environment...")
@@ -131,7 +122,7 @@ def main():
 
     bin_count = 0
     if bin_files:
-        print(f"\n[3/5] Extracting .bin files ({workers} workers)...")
+        print(f"\n[3/5] Extracting .bin files (using {workers} cores)...")
 
         with Progress(
             SpinnerColumn(),
