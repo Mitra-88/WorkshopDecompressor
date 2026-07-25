@@ -1,5 +1,5 @@
-import sys
 import platform
+import sys
 from pathlib import Path
 
 import ui
