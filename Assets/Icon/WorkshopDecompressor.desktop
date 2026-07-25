@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=WorkshopDecompressor
+Comment=Extracts and decompresses Steam Workshop addons
+Exec=WorkshopDecompressor
+Icon=WorkshopDecompressor
+Categories=Utility;
+Terminal=true

@@ -1,7 +1,14 @@
+import sys
 import platform
 from pathlib import Path
 
 import ui
+
+
+def _get_base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+    return Path(__file__).resolve().parent.parent
 
 
 def _executables_for(system):
@@ -13,7 +20,7 @@ def _executables_for(system):
 
 def locate_executables():
     system = platform.system()
-    bin_dir = Path("Bin") / system
+    bin_dir = _get_base_dir() / "Bin" / system
 
     found = {}
     missing = []
@@ -62,3 +69,7 @@ def ensure_executable_paths():
     found.update(manual_paths)
 
     return found
+
+if __name__ == "__main__":
+    result = ensure_executable_paths()
+    print("\nPaths:", result)
