@@ -87,3 +87,4 @@ This project is licensed under the [GNU General Public License v3.0](LICENSE).
 - [RarFile](https://pypi.org/project/rarfile/): For extracting rar files.
 - [FastGMAD](https://github.com/WilliamVenner/fastgmad): Fast reimplementation of gmad (forked).
 - [7-zip](https://www.7-zip.org/): For extracting `.bin` files.
+- [Rich](https://rich.readthedocs.io/en/latest/) For beautiful console formatting, progress bars, and enhanced terminal output.
