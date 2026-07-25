@@ -56,49 +56,9 @@ jobs:
           rm -f dist/Bin/Darwin/fastgmad
           rm -f dist/Bin/Darwin/7z
 
-      - name: Upload raw artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: WorkshopDecompressor-${{ steps.sha.outputs.short_sha }}-Linux-x64
           path: dist
-          compression-level: 9
-
-      - name: Install linuxdeploy
-        run: |
-          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-          chmod +x linuxdeploy-x86_64.AppImage
-
-      - name: Assemble AppDir
-        run: |
-          mkdir -p AppDir/usr/bin
-          cp dist/WorkshopDecompressor AppDir/usr/bin/
-          cp -r dist/Bin AppDir/usr/bin/Bin
-          cp Assets/Icon/WorkshopDecompressor.desktop AppDir/
-          cp Assets/Icon/WorkshopDecompressor.png AppDir/
-
-      - name: Make bundled tools executable
-        run: |
-          chmod +x AppDir/usr/bin/WorkshopDecompressor
-          chmod +x AppDir/usr/bin/Bin/Linux/7z
-          chmod +x AppDir/usr/bin/Bin/Linux/fastgmad
-
-      - name: Build AppImage
-        env:
-          APPIMAGE_EXTRACT_AND_RUN: "1"
-        run: |
-          ./linuxdeploy-x86_64.AppImage \
-            --appdir AppDir \
-            --executable AppDir/usr/bin/WorkshopDecompressor \
-            --desktop-file Assets/Icon/WorkshopDecompressor.desktop \
-            --icon-file Assets/Icon/WorkshopDecompressor.png \
-            --output appimage
-
-      - name: Rename AppImage
-        run: mv WorkshopDecompressor*.AppImage WorkshopDecompressor-${{ steps.sha.outputs.short_sha }}-Linux-x64.AppImage
-
-      - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: WorkshopDecompressor-${{ steps.sha.outputs.short_sha }}-Linux-x64-AppImage
-          path: WorkshopDecompressor-${{ steps.sha.outputs.short_sha }}-Linux-x64.AppImage
           compression-level: 9
