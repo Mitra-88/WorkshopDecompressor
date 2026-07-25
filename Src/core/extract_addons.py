@@ -1,5 +1,6 @@
 import logging
 import os
+import platform
 import stat
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
@@ -195,6 +196,9 @@ def move_files_to_leftover(files, leftover_dir):
 
 
 def prepare_executables(exec_paths):
+    if platform.system() not in ("Linux", "Darwin"):
+        return
+
     for name, executable_path in exec_paths.items():
         try:
             path = Path(executable_path)
