@@ -76,6 +76,12 @@ jobs:
           cp Assets/Icon/WorkshopDecompressor.desktop AppDir/
           cp Assets/Icon/WorkshopDecompressor.png AppDir/
 
+      - name: Make bundled tools executable
+        run: |
+          chmod +x AppDir/usr/bin/WorkshopDecompressor
+          chmod +x AppDir/usr/bin/Bin/Linux/7z
+          chmod +x AppDir/usr/bin/Bin/Linux/fastgmad
+
       - name: Build AppImage
         env:
           APPIMAGE_EXTRACT_AND_RUN: "1"
