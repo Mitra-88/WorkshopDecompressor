@@ -5,6 +5,9 @@ permissions:
   actions: write
 
 on:
+  workflow_dispatch:
+
+on:
   push:
     branches:
       - master
