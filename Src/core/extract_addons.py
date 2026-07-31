@@ -28,6 +28,8 @@ ADDON_WARNING_LINES = (
     "These errors are NOT handled by this program.",
 )
 
+_warning_confirmed = False
+
 
 def _null_stage(stage, description, total):
     return nullcontext(lambda: None)
@@ -338,8 +340,12 @@ def run_addon_extraction(exec_paths, progress_factory=None):
 
 
 def main():
-    if not ui.confirm_continue("⚠ WARNING ⚠", ADDON_WARNING_LINES):
-        return
+    global _warning_confirmed
+
+    if not _warning_confirmed:
+        if not ui.confirm_continue("⚠ WARNING ⚠", ADDON_WARNING_LINES):
+            return
+        _warning_confirmed = True
 
     exec_paths = ensure_executable_paths()
     summary = run_addon_extraction(exec_paths, ui.stage_progress)
