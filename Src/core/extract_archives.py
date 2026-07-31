@@ -2,12 +2,13 @@ import logging
 from contextlib import nullcontext
 from pathlib import Path
 from shutil import move
+from subprocess import DEVNULL, run
 from tarfile import open as TarFile
 from time import time
 from zipfile import ZipFile
 
 import ui
-from py7zr import SevenZipFile
+from get_executable import ensure_executable_paths
 from rarfile import RarFile
 from utils import (excluded_directories, format_time, remove_empty_directories,
                    unique_name)
@@ -17,19 +18,21 @@ logger = logging.getLogger("workshop.archives")
 ARCHIVE_HANDLERS = {
     ".zip": ZipFile,
     ".rar": RarFile,
-    ".7z": SevenZipFile,
     ".tar": TarFile,
     ".gz": TarFile,
     ".xz": TarFile,
     ".bz2": TarFile,
 }
 
-ARCHIVE_EXTENSIONS = frozenset(ARCHIVE_HANDLERS.keys())
+SEVEN_ZIP_EXTENSIONS = frozenset({".7z"})
+ARCHIVE_EXTENSIONS = frozenset(ARCHIVE_HANDLERS.keys()) | SEVEN_ZIP_EXTENSIONS
 
 ARCHIVE_WARNING_LINES = (
     "Archive extraction modifies files.",
     "Ensure files are not in use.",
 )
+
+_warning_confirmed = False
 
 
 def _null_stage(stage, description, total):
@@ -56,7 +59,7 @@ def find_archives(start_dir="."):
     return archives
 
 
-def extract_archive(archive_path, leftover_dir):
+def extract_archive(archive_path, leftover_dir, seven_zip_path):
     archive_path = Path(archive_path)
 
     try:
@@ -64,8 +67,17 @@ def extract_archive(archive_path, leftover_dir):
         output_dir = unique_name(archive_path.stem)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        with ARCHIVE_HANDLERS[extension](str(archive_path), "r") as archive:
-            archive.extractall(output_dir)
+        if extension in SEVEN_ZIP_EXTENSIONS:
+            result = run(
+                [seven_zip_path, "x", str(archive_path), f"-o{output_dir}", "-y"],
+                stdout=DEVNULL,
+                stderr=DEVNULL,
+            )
+            if result.returncode != 0:
+                raise RuntimeError(f"7-Zip exited with code {result.returncode}")
+        else:
+            with ARCHIVE_HANDLERS[extension](str(archive_path), "r") as archive:
+                archive.extractall(output_dir)
 
         dest = leftover_dir / archive_path.name
 
@@ -88,7 +100,7 @@ def extract_archive(archive_path, leftover_dir):
         }
 
 
-def run_archive_extraction(progress_factory=None):
+def run_archive_extraction(progress_factory=None, seven_zip_path=None):
     progress_factory = progress_factory or _null_stage
 
     logger.info("Scanning archives...")
@@ -117,7 +129,7 @@ def run_archive_extraction(progress_factory=None):
 
     with progress_factory("archive", "Extracting archives", len(archives)) as advance:
         for archive in archives:
-            outcome = extract_archive(archive, leftover_dir)
+            outcome = extract_archive(archive, leftover_dir, seven_zip_path)
             processed += 1
 
             if not outcome["success"]:
@@ -145,17 +157,23 @@ def run_archive_extraction(progress_factory=None):
 
 
 def main():
-    confirmed = ui.confirm_continue(
-        "⚠ WARNING ⚠",
-        ARCHIVE_WARNING_LINES,
-        cancel_message="Cancelled.",
-        invalid_message="Invalid input.",
-    )
+    global _warning_confirmed
 
-    if not confirmed:
-        return
+    if not _warning_confirmed:
+        confirmed = ui.confirm_continue(
+            "⚠ WARNING ⚠",
+            ARCHIVE_WARNING_LINES,
+            cancel_message="Cancelled.",
+            invalid_message="Invalid input.",
+        )
 
-    summary = run_archive_extraction(ui.stage_progress)
+        if not confirmed:
+            return
+
+        _warning_confirmed = True
+
+    exec_paths = ensure_executable_paths()
+    summary = run_archive_extraction(ui.stage_progress, exec_paths["7z"])
 
     if summary.get("found", 0):
         ui.render_archive_summary(summary)
