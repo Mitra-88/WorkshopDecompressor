@@ -4,7 +4,6 @@ import sys
 import ui
 from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
-from py7zr import __version__ as py7zr_version
 from PyInstaller import __version__ as pyinstaller_version
 from rarfile import __version__ as rarfile_version
 from utils import app_version, build_date, get_system_info
@@ -27,7 +26,6 @@ def _build_info():
         "Operating System": get_system_info(),
         "Dependencies": (
             f"PyInstaller {pyinstaller_version}, "
-            f"Py7zr {py7zr_version}, "
             f"RarFile {rarfile_version}, "
             f"Rich 15.0.0, "
             "7-Zip 26.02"
