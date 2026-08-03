@@ -1,9 +1,9 @@
 import logging
+import tarfile
 from contextlib import nullcontext
 from pathlib import Path
 from shutil import move
 from subprocess import DEVNULL, run
-from tarfile import open as TarFile
 from time import time
 from zipfile import ZipFile
 
@@ -18,10 +18,11 @@ logger = logging.getLogger("workshop.archives")
 ARCHIVE_HANDLERS = {
     ".zip": ZipFile,
     ".rar": RarFile,
-    ".tar": TarFile,
-    ".gz": TarFile,
-    ".xz": TarFile,
-    ".bz2": TarFile,
+    ".tar": tarfile.open,
+    ".tar.gz": tarfile.open,
+    ".tgz": tarfile.open,
+    ".tar.bz2": tarfile.open,
+    ".tar.xz": tarfile.open,
 }
 
 SEVEN_ZIP_EXTENSIONS = frozenset({".7z"})
@@ -45,16 +46,26 @@ def _log_archive_failure(outcome):
     logger.error("Could not extract %s. %s", name, reason)
 
 
+def _get_archive_extension(filename):
+    path = Path(filename)
+    name_lower = path.name.lower()
+
+    for compound_ext in [".tar.gz", ".tar.bz2", ".tar.xz", ".tgz"]:
+        if name_lower.endswith(compound_ext):
+            return compound_ext
+
+    return path.suffix.lower()
+
+
 def find_archives(start_dir="."):
     archives = []
 
     for root, dirnames, filenames in Path(start_dir).walk():
         dirnames[:] = [d for d in dirnames if d not in excluded_directories]
-        archives.extend(
-            root / filename
-            for filename in filenames
-            if Path(filename).suffix.lower() in ARCHIVE_EXTENSIONS
-        )
+        for filename in filenames:
+            ext = _get_archive_extension(filename)
+            if ext in ARCHIVE_EXTENSIONS:
+                archives.append(Path(root) / filename)
 
     return archives
 
@@ -63,7 +74,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
     archive_path = Path(archive_path)
 
     try:
-        extension = archive_path.suffix.lower()
+        extension = _get_archive_extension(archive_path.name)
         output_dir = unique_name(archive_path.stem)
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -75,9 +86,24 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             )
             if result.returncode != 0:
                 raise RuntimeError(f"7-Zip exited with code {result.returncode}")
-        else:
-            with ARCHIVE_HANDLERS[extension](str(archive_path), "r") as archive:
+        
+        elif extension in {".zip", ".rar"}:
+            handler = ARCHIVE_HANDLERS[extension]
+            with handler(str(archive_path), "r") as archive:
                 archive.extractall(output_dir)
+        
+        else:
+            try:
+                with tarfile.open(str(archive_path), "r") as archive:
+                    archive.extractall(output_dir, filter='data')
+            except tarfile.TarError as e:
+                error_msg = str(e)
+                if "truncated" in error_msg.lower():
+                    raise RuntimeError(f"Invalid tar archive: file appears truncated")
+                elif "not a" in error_msg.lower():
+                    raise RuntimeError("File is not a valid tar archive")
+                else:
+                    raise RuntimeError(f"Tar extraction error: {error_msg}")
 
         dest = leftover_dir / archive_path.name
 
@@ -92,11 +118,15 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             "error": None,
         }
 
-    except Exception:
+    except Exception as e:
+        error_msg = str(e)
+        if not error_msg:
+            error_msg = f"{type(e).__name__}: Unknown error"
+        
         return {
             "file": archive_path,
             "success": False,
-            "error": "Check that it is not corrupted, password-protected, or in use.",
+            "error": error_msg,
         }
 
 
