@@ -8,8 +8,8 @@
   - [macOS](#dependencies)
 - [Compiling](#compiling)
   - [Windows](#windows-details)
-  - [Linux](#linux-details)
-  - [macOS](#macos-details)
+  - [Linux](#linux-and-macos)
+  - [macOS](#linux-and-macos)
 
 # Platforms
 
@@ -64,7 +64,7 @@ pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompre
 Copy-Item -Path "Src/Bin" -Destination "dist" -Recurse -Force
 ```
 
-## Linux/macOS
+## Linux and macOS
 
 In Terminal:
 ```sh
