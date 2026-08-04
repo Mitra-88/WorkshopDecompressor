@@ -16,18 +16,29 @@
 - Easy to Use: A simple command-line interface.
 - Drop-in replacement for GWTool.
 
+## Coming from GWTool?
+
+Both tools can extract Garry's Mod addons, but they take different approaches. GWTool is a Windows-only GUI that's been around for years, while Workshop Decompressor is a modern, cross-platform tool that aims to make extracting addons as simple as possible.
+
+| **What people actually care about** | **GWTool**              | **Workshop Decompressor** |
+| -----------------------------------|--------------------------|---------------------------|
+| Works on Windows                   | ✅                       | ✅                        |
+| Works on macOS & Linux             | ❌                       | ✅                        |
+| Open modern `.gma` files           | ✅                       | ✅                        |
+| Open legacy `.bin` files           | ⚠️ Multiple manual steps | ✅ Just drop it in        |
+| Handles ZIP, RAR, 7Z, TAR...       | ❌                       | ✅                        |
+| Still getting updates              | ❌ Last updated in 2012  | ✅ Ongoing development    |
+
 ## System Requirements
 
 **RAM Usage:** 30MB<br>
 **Disk Space:** 40MB
 
-| Operating System | Supported Versions                                         | Architecture | Tested |
-|------------------|------------------------------------------------------------|--------------|--------|
-| Windows          | 11, 10 (1809 or later)                                     | 64-Bit       |   ✅   |
-| GNU/Linux        | Debian 13, Ubuntu 26.04, Fedora 44, Arch Linux, OpenSUSE   | 64-Bit       |   ✅   |
-| macOS            | 27, 26, 15, 14, 13, 12                                     | ARM64        |   ❌   |
-
-> **macOS:** Built for Apple Silicon. I don't own a Mac to verify, but it should work.
+| Operating System | Supported Versions                                       | Architecture | Tested   |
+|------------------|----------------------------------------------------------|--------------|----------|
+| Windows          | 11, 10 (1809 or later)                                   | 64-Bit       | ✅ Yeah  |
+| GNU/Linux        | Debian 13, Ubuntu 26.04, Fedora 44, Arch Linux, OpenSUSE | 64-Bit       | ✅ Yeah  |
+| macOS            | 27, 26, 15, 14, 13, 12                                   | ARM64        | Probably works? No Mac to test on, setting up a VM is a nightmare |
 
 ## How to Install
 
