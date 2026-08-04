@@ -383,6 +383,17 @@ def stage_progress(stage, description, total):
 
 
 def render_addon_summary(summary):
+    if not summary.get("bin_found", 0) and not summary.get("gma_found", 0):
+        console.print(
+            Panel(
+                Text("No .bin or .gma files found.", style="muted"),
+                title=_panel_title("NOTHING TO DO", style="muted"),
+                border_style="muted",
+                expand=False,
+            )
+        )
+        return
+
     rows = [
         ("Time", summary.get("elapsed", "")),
         (".bin files", summary.get("bin_processed", 0)),
@@ -396,6 +407,17 @@ def render_addon_summary(summary):
 
 
 def render_archive_summary(summary):
+    if not summary.get("found", 0):
+        console.print(
+            Panel(
+                Text("No archives found.", style="muted"),
+                title=_panel_title("NOTHING TO DO", style="muted"),
+                border_style="muted",
+                expand=False,
+            )
+        )
+        return
+
     rows = [
         ("Time", summary.get("elapsed", "")),
         ("Processed", summary.get("processed", 0)),

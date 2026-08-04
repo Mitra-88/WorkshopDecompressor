@@ -75,7 +75,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
 
     try:
         extension = _get_archive_extension(archive_path.name)
-        output_dir = unique_name(archive_path.stem)
+        output_dir = unique_name(archive_path.name.split('.')[0])
         output_dir.mkdir(parents=True, exist_ok=True)
 
         if extension in SEVEN_ZIP_EXTENSIONS:
@@ -91,7 +91,6 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             handler = ARCHIVE_HANDLERS[extension]
             with handler(str(archive_path), "r") as archive:
                 archive.extractall(output_dir)
-        
         else:
             try:
                 with tarfile.open(str(archive_path), "r") as archive:
@@ -205,5 +204,4 @@ def main():
     exec_paths = ensure_executable_paths()
     summary = run_archive_extraction(ui.stage_progress, exec_paths["7z"])
 
-    if summary.get("found", 0):
-        ui.render_archive_summary(summary)
+    ui.render_archive_summary(summary)
