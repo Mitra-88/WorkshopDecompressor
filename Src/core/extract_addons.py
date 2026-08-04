@@ -16,7 +16,7 @@ from utils import (excluded_directories, format_time, remove_empty_directories,
 
 logger = logging.getLogger("workshop.addons")
 
-MAX_WORKERS = 32
+MAX_WORKERS = 16
 system_cores = os.cpu_count() or 2
 workers = min(MAX_WORKERS, max(1, system_cores - 2))
 
@@ -274,7 +274,7 @@ def run_addon_extraction(exec_paths, progress_factory=None):
     bin_failures = []
 
     if bin_files:
-        logger.info("[3/5] Extracting .bin files using %d workers...", workers)
+        logger.info("[3/5] Extracting .bin files using %d cores...", workers)
         bin_processed, bin_failures = _process_parallel(
             bin_files,
             "bin",
@@ -301,7 +301,7 @@ def run_addon_extraction(exec_paths, progress_factory=None):
     gma_failures = []
 
     if gma_files:
-        logger.info("Extracting .gma files using %d workers...", workers)
+        logger.info("Extracting .gma files using %d cores...", workers)
         gma_processed, gma_failures = _process_parallel(
             gma_files,
             "gma",
