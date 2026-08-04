@@ -5,6 +5,8 @@ permissions:
   actions: write
 
 on:
+  workflow_dispatch:
+
   push:
     branches:
       - release
@@ -19,12 +21,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.3.0
         with:
-          python-version: '3.12.10'
+          python-version: '3.14.6'
           architecture: 'x64'
           cache: 'pip'
 
@@ -44,7 +46,7 @@ jobs:
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --noconfirm --onefile --console --icon "Src/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/extract_addons.py;." --add-data "Src/extract_archives.py;." --add-data "Src/utils.py;." --add-data "Src/get_executable.py;."  "Src/cli.py"
+          pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/Core/extract_addons.py;." --add-data "Src/Core/extract_archives.py;." --add-data "Src/Core/utils.py;." --add-data "Src/Core/get_executable.py;."  "Src/Core/cli.py"
 
       - name: Move Bin Folder and Remove Gmad And 7-zip from Linux/macOS
         run: |

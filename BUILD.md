@@ -8,16 +8,16 @@
   - [macOS](#dependencies)
 - [Compiling](#compiling)
   - [Windows](#windows-details)
-  - [Linux](#linux-details)
-  - [macOS](#macos-details)
+  - [Linux](#linux-and-macos)
+  - [macOS](#linux-and-macos)
 
 # Platforms
 
-| Operating System | Supported Versions                                         | Architecture |
-|------------------|------------------------------------------------------------|--------------|
-| Windows          | 11, 10 (1809 or later)                                     | 64-Bit       |
-| GNU/Linux        | Debian 13, Ubuntu 24.04.4, Fedora 43, Arch Linux, OpenSUSE | 64-Bit       |
-| macOS            | 26, 15, 14, 13, 12                                         | ARM64        |
+| Operating System | Supported Versions                                       | Architecture | Tested   |
+|------------------|----------------------------------------------------------|--------------|----------|
+| Windows          | 11, 10 (1809 or later)                                   | 64-Bit       | ✅ Yeah  |
+| GNU/Linux        | Debian 13, Ubuntu 26.04, Fedora 44, Arch Linux, OpenSUSE | 64-Bit       | ✅ Yeah  |
+| macOS            | 27, 26, 15, 14, 13, 12                                   | ARM64        | Probably works? No Mac to test on, setting up a VM is a nightmare |
 
 # Getting the Source Code
 
@@ -27,10 +27,9 @@
 
 You need the following to compile Workshop Decompressor:
 
-- [Python](https://www.python.org/) 3.12+
-- [PyInstaller](https://www.pyinstaller.org/) 6.19.0+
-- [Py7zr](https://pypi.org/project/py7zr/) 1.1.0+
-- [RarFile](https://pypi.org/project/rarfile/) 4.2+
+- [Python](https://www.python.org/) 3.12+ (latest version is preferred)
+- [PyInstaller](https://www.pyinstaller.org/) 6.21.0+
+- [RarFile](https://pypi.org/project/rarfile/) 4.5+
 
 ## Linux Dependencies
 
@@ -61,11 +60,11 @@ cd WorkshopDecompressor
 py -m venv .venv
 .venv/Scripts/activate
 pip install -r requirements.txt
-pyinstaller --noconfirm --onefile --console --icon "Src/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/extract_addons.py;." --add-data "Src/extract_archives.py;." --add-data "Src/utils.py;." --add-data "Src/get_executable.py;."  "Src/cli.py"
+pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/Core/extract_addons.py;." --add-data "Src/Core/extract_archives.py;." --add-data "Src/Core/utils.py;." --add-data "Src/Core/get_executable.py;."  "Src/Core/cli.py"
 Copy-Item -Path "Src/Bin" -Destination "dist" -Recurse -Force
 ```
 
-## Linux/macOS
+## Linux and macOS
 
 In Terminal:
 ```sh
@@ -73,6 +72,6 @@ cd WorkshopDecompressor
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pyinstaller --noconfirm --onefile --console --name "WorkshopDecompressor" --strip --clean --optimize "2" --add-data "Src/extract_addons.py:." --add-data "Src/extract_archives.py:." --add-data "Src/utils.py:." --add-data "Src/get_executable.py:."  "Src/cli.py"
+pyinstaller --noconfirm --onefile --console --name "WorkshopDecompressor" --strip --clean --optimize "2" --add-data "Src/core/extract_addons.py:." --add-data "Src/core/extract_archives.py:." --add-data "Src/core/utils.py:." --add-data "Src/core/get_executable.py:."  "Src/core/cli.py"
 cp -r Src/Bin dist/
 ```

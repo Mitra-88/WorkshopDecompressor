@@ -1,6 +1,11 @@
 # Workshop Decompressor
 
-**Workshop Decompressor** is a command-line tool for players of Garry's Mod who need to extract content from addon files. This utility supports both modern `.gma` addons and legacy `.bin` addons, a tool for players who download addons from sources such as SteamCMD, third-party programs, websites, or for those using cracked versions of the game.
+
+<div align="center">
+  <img src="Assets/Icon/WorkshopDecompressor-README.png" alt="Yeah" width="256" height="256">
+</div>
+
+**Workshop Decompressor** is a command-line tool for players of Garry's Mod who need to extract content from addon files. This utility supports both modern `.gma` addons and legacy `.bin` addons, a tool for players who download addons from sources such as SteamCMD, third-party programs, websites, or for those using offline versions of the game.
 
 ## Key Features
 
@@ -11,16 +16,29 @@
 - Easy to Use: A simple command-line interface.
 - Drop-in replacement for GWTool.
 
+## Coming from GWTool?
+
+Both tools can extract Garry's Mod addons, but they take different approaches. GWTool is a Windows-only GUI that's been around for years, while Workshop Decompressor is a modern, cross-platform tool that aims to make extracting addons as simple as possible.
+
+| **What people actually care about** | **GWTool**              | **Workshop Decompressor** |
+| -----------------------------------|--------------------------|---------------------------|
+| Works on Windows                   | ✅                       | ✅                        |
+| Works on macOS & Linux             | ❌                       | ✅                        |
+| Open modern `.gma` files           | ✅                       | ✅                        |
+| Open legacy `.bin` files           | ⚠️ Multiple manual steps | ✅ Just drop it in        |
+| Handles ZIP, RAR, 7Z, TAR...       | ❌                       | ✅                        |
+| Still getting updates              | ❌ Last updated in 2012  | ✅ Ongoing development    |
+
 ## System Requirements
 
-**RAM Usage:** 30MB<br>
-**Disk Space:** 40MB
+**RAM Usage:** 40MB<br>
+**Disk Space:** 25MB
 
-| Operating System | Supported Versions                                         | Architecture |
-|------------------|------------------------------------------------------------|--------------|
-| Windows          | 11, 10 (1809 or later)                                     | 64-Bit       |
-| GNU/Linux        | Debian 13, Ubuntu 24.04.4, Fedora 43, Arch Linux, OpenSUSE | 64-Bit       |
-| macOS            | 26, 15, 14, 13, 12                                         | ARM64        |
+| Operating System | Supported Versions                                       | Architecture | Tested   |
+|------------------|----------------------------------------------------------|--------------|----------|
+| Windows          | 11, 10 (1809 or later)                                   | 64-Bit       | ✅ Yeah  |
+| GNU/Linux        | Debian 13, Ubuntu 26.04, Fedora 44, Arch Linux, OpenSUSE | 64-Bit       | ✅ Yeah  |
+| macOS            | 27, 26, 15, 14, 13, 12                                   | ARM64        | Probably works? No Mac to test on, setting up a VM is a nightmare |
 
 ## How to Install
 
@@ -34,17 +52,19 @@ Download the Latest Release:
 **If you use SteamCMD:**
 Drop the Workshop Decompressor into this folder:
 `steamcmd/steamapps/workshop/content/4000`
-That’s where all your downloaded GMod addons live.
+That’s where all your downloaded GMod addons live. (`.gma`, `.bin` files)
 
-<img src="Src/Assets/Screenshot-1.png" alt="Example">
+<img src="Assets/Screenshot-1.png" alt="Example-1">
 
-**If you use anything else (web downloads, random folders, cracked GMod, etc.):**
+---
+
+**If you use anything else (web downloads, random folders, offline versions of GMod, etc.):**
 Put Workshop Decompressor in the same folder where your `.gma`, `.bin`, or archive files are.
 
 That’s it.
 The program scans **the folder it’s in** and **every subfolder**, automatically.
 
-<img src="Src/Assets/Screenshot-2.png" alt="Example">
+<img src="Assets/Screenshot-2.png" alt="Example-2">
 
 ### Step 2: Run Workshop Decompressor
 
@@ -85,3 +105,4 @@ This project is licensed under the [GNU General Public License v3.0](LICENSE).
 - [RarFile](https://pypi.org/project/rarfile/): For extracting rar files.
 - [FastGMAD](https://github.com/WilliamVenner/fastgmad): Fast reimplementation of gmad (forked).
 - [7-zip](https://www.7-zip.org/): For extracting `.bin` files.
+- [Rich](https://rich.readthedocs.io/en/latest/) For beautiful console formatting, progress bars, and enhanced terminal output.
