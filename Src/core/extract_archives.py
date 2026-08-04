@@ -75,7 +75,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
 
     try:
         extension = _get_archive_extension(archive_path.name)
-        output_dir = unique_name(archive_path.name.split('.')[0])
+        output_dir = unique_name(archive_path.name.split(".")[0])
         output_dir.mkdir(parents=True, exist_ok=True)
 
         if extension in SEVEN_ZIP_EXTENSIONS:
@@ -86,7 +86,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             )
             if result.returncode != 0:
                 raise RuntimeError(f"7-Zip exited with code {result.returncode}")
-        
+
         elif extension in {".zip", ".rar"}:
             handler = ARCHIVE_HANDLERS[extension]
             with handler(str(archive_path), "r") as archive:
@@ -94,7 +94,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
         else:
             try:
                 with tarfile.open(str(archive_path), "r") as archive:
-                    archive.extractall(output_dir, filter='data')
+                    archive.extractall(output_dir, filter="data")
             except tarfile.TarError as e:
                 error_msg = str(e)
                 if "truncated" in error_msg.lower():
@@ -121,7 +121,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
         error_msg = str(e)
         if not error_msg:
             error_msg = f"{type(e).__name__}: Unknown error"
-        
+
         return {
             "file": archive_path,
             "success": False,

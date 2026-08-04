@@ -70,6 +70,7 @@ def ensure_executable_paths():
 
     return found
 
+
 if __name__ == "__main__":
     result = ensure_executable_paths()
     print("\nPaths:", result)
