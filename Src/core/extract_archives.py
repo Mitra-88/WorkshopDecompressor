@@ -1,5 +1,7 @@
 import logging
+import os
 import tarfile
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
 from pathlib import Path
 from shutil import move
@@ -14,6 +16,10 @@ from utils import (excluded_directories, format_time, remove_empty_directories,
                    unique_name)
 
 logger = logging.getLogger("workshop.archives")
+
+MAX_WORKERS = 10
+system_cores = os.cpu_count() or 2
+workers = min(MAX_WORKERS, max(1, system_cores - 2))
 
 ARCHIVE_HANDLERS = {
     ".zip": ZipFile,
@@ -98,7 +104,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             except tarfile.TarError as e:
                 error_msg = str(e)
                 if "truncated" in error_msg.lower():
-                    raise RuntimeError(f"Invalid tar archive: file appears truncated")
+                    raise RuntimeError("Invalid tar archive: file appears truncated")
                 elif "not a" in error_msg.lower():
                     raise RuntimeError("File is not a valid tar archive")
                 else:
@@ -129,6 +135,49 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
         }
 
 
+def _process_parallel_archives(
+    files,
+    stage,
+    description,
+    worker,
+    leftover_dir,
+    tool_path,
+    progress_factory,
+):
+    processed = 0
+    failures = []
+
+    with progress_factory(stage, description, len(files)) as advance:
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {
+                executor.submit(worker, file, leftover_dir, tool_path): file
+                for file in files
+            }
+
+            for future in as_completed(futures):
+                source = futures[future]
+
+                try:
+                    outcome = future.result()
+                except Exception as exc:
+                    outcome = {
+                        "file": Path(source),
+                        "success": False,
+                        "error": f"Unexpected problem: {exc}",
+                    }
+                    logger.debug("Archive extraction exception: %s", exc)
+
+                processed += 1
+
+                if not outcome["success"]:
+                    failures.append(outcome)
+                    _log_archive_failure(outcome)
+
+                advance()
+
+    return processed, failures
+
+
 def run_archive_extraction(progress_factory=None, seven_zip_path=None):
     progress_factory = progress_factory or _null_stage
 
@@ -151,21 +200,17 @@ def run_archive_extraction(progress_factory=None, seven_zip_path=None):
     leftover_dir.mkdir(exist_ok=True)
 
     start_time = time()
-    processed = 0
-    failures = []
 
-    logger.info("Extracting archives...")
-
-    with progress_factory("archive", "Extracting archives", len(archives)) as advance:
-        for archive in archives:
-            outcome = extract_archive(archive, leftover_dir, seven_zip_path)
-            processed += 1
-
-            if not outcome["success"]:
-                failures.append(outcome)
-                _log_archive_failure(outcome)
-
-            advance()
+    logger.info("Extracting %d archives using %d cores...", len(archives), workers)
+    processed, failures = _process_parallel_archives(
+        archives,
+        "archive",
+        "Extracting archives",
+        extract_archive,
+        leftover_dir,
+        seven_zip_path,
+        progress_factory,
+    )
 
     logger.info("Cleaning up...")
     deleted_dirs_count = remove_empty_directories(".")

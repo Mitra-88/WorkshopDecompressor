@@ -194,21 +194,31 @@ def render_menu(items):
 
 def render_help(items=None):
     help_text = Text()
-    
+
     help_text.append("📂 Setup\n", style="info")
-    help_text.append("Place this executable in your addon folder (e.g., steamapps/workshop/content/4000).\n")
-    help_text.append("It automatically scans the current directory and all subdirectories.\n\n")
-    
+    help_text.append(
+        "Place this executable in your addon folder (e.g., steamapps/workshop/content/4000).\n"
+    )
+    help_text.append(
+        "It automatically scans the current directory and all subdirectories.\n\n"
+    )
+
     help_text.append("🔧 Extraction Modes\n", style="info")
     help_text.append("[1] Extract Addons: ", style="menu.label")
     help_text.append("Processes .gma and .bin files. Outputs to 'Extracted-Addons'.\n")
     help_text.append("[2] Extract Archives: ", style="menu.label")
-    help_text.append("Unpacks .zip, .rar, .7z, and .tar files. Originals are moved to 'Leftover'.\n\n")
-    
+    help_text.append(
+        "Unpacks .zip, .rar, .7z, and .tar files. Originals are moved to 'Leftover'.\n\n"
+    )
+
     help_text.append("💡 Tips\n", style="info")
     help_text.append("• Close tools using these files before extracting.\n")
-    help_text.append("• If 7-Zip or fastgmad are missing, the tool will prompt for their paths.\n")
-    help_text.append("• Empty directories are cleaned up automatically after extraction.")
+    help_text.append(
+        "• If 7-Zip or fastgmad are missing, the tool will prompt for their paths.\n"
+    )
+    help_text.append(
+        "• Empty directories are cleaned up automatically after extraction."
+    )
 
     console.print(
         Panel(
