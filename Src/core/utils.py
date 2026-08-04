@@ -1,4 +1,5 @@
 import platform
+import threading
 from datetime import datetime
 from os import rmdir, scandir
 from pathlib import Path
@@ -8,6 +9,9 @@ excluded_directories = frozenset({"Bin", "Leftover", "_internal", "Extracted-Add
 
 app_version = f"v2.8.0 ({uuid4().hex[:7]})"
 build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d)")
+
+_unique_name_lock = threading.Lock()
+_reserved_paths = set()
 
 
 def format_time(seconds):
@@ -80,15 +84,20 @@ def get_system_info():
 
 
 def unique_name(file_path):
-    p = Path(file_path)
-    if not p.exists():
-        return p
-    counter = 1
-    while True:
-        candidate = p.with_name(f"{p.stem}-{counter}{p.suffix}")
-        if not candidate.exists():
-            return candidate
-        counter += 1
+    with _unique_name_lock:
+        p = Path(file_path)
+        counter = 0
+        while True:
+            candidate = (
+                p if counter == 0 else p.with_name(f"{p.stem}-{counter}{p.suffix}")
+            )
+            cand_str = str(candidate.absolute())
+
+            if not candidate.exists() and cand_str not in _reserved_paths:
+                _reserved_paths.add(cand_str)
+                return candidate
+
+            counter += 1
 
 
 def remove_empty_directories(directory, excluded=excluded_directories):

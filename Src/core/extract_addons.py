@@ -181,8 +181,7 @@ def move_files_to_leftover(files, leftover_dir):
 
         dest = leftover / file.name
 
-        if dest.exists():
-            dest = unique_name(dest)
+        dest = unique_name(dest)
 
         try:
             move(file, dest)
