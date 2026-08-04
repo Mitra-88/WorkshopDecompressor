@@ -72,6 +72,6 @@ cd WorkshopDecompressor
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-pyinstaller --noconfirm --onefile --console --name "WorkshopDecompressor" --strip --clean --optimize "2" --add-data "Src/core/extract_addons.py:." --add-data "Src/core/extract_archives.py:." --add-data "Src/core/utils.py:." --add-data "Src/core/get_executable.py:."  "Src/core/cli.py"
+pyinstaller --noconfirm --onefile --console --name "WorkshopDecompressor" --strip --clean --optimize "2" --add-data "Src/Core/extract_addons.py:." --add-data "Src/Core/extract_archives.py:." --add-data "Src/Core/utils.py:." --add-data "Src/Core/get_executable.py:."  "Src/Core/cli.py"
 cp -r Src/Bin dist/
 ```
