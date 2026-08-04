@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
 from pathlib import Path
 from shutil import move
-from subprocess import DEVNULL, run
+from subprocess import DEVNULL, PIPE, run
 from time import time
 
 import ui
@@ -86,10 +86,9 @@ def add_extension_to_files_without_format(start_dir="."):
                 renamed += 1
             except OSError as exc:
                 logger.error(
-                    "Could not rename %s. Check that the file is not open or locked.",
-                    filename,
+                    "Could not rename %s. Check that the file is not open or locked. Reason: %s",
+                    filename, exc
                 )
-                logger.debug("Rename failure: %s", exc)
 
     return renamed
 
@@ -104,26 +103,26 @@ def extract_bin_file(bin_file, seven_zip_path):
         result = run(
             [seven_zip_path, "x", str(bin_file), f"-o{extract_dir}", "-y"],
             stdout=DEVNULL,
-            stderr=DEVNULL,
+            stderr=PIPE,
+            text=True,
         )
 
         if result.returncode >= 2 and not any(extract_dir.iterdir()):
+            err_msg = result.stderr.strip() or f"exited with code {result.returncode}"
             return _outcome(
                 bin_file,
                 False,
                 result.returncode,
-                "7-Zip could not extract this file. "
-                "Close programs using it or verify the file is valid.",
+                f"7-Zip could not extract this file. {err_msg}",
             )
 
         return _outcome(bin_file, True, result.returncode)
 
-    except OSError:
+    except OSError as exc:
         return _outcome(
             bin_file,
             False,
-            error="Could not run 7-Zip. "
-            "Check that the executable exists and is not blocked.",
+            error=f"Could not run 7-Zip ({exc}). Check that the executable exists and is not blocked.",
         )
 
 
@@ -144,26 +143,26 @@ def extract_gma_file(gma_file, fastgmad_path):
                 str(addon_dir),
             ],
             stdout=DEVNULL,
-            stderr=DEVNULL,
+            stderr=PIPE,
+            text=True,
         )
 
         if result.returncode != 0:
+            err_msg = result.stderr.strip() or f"exited with code {result.returncode}"
             return _outcome(
                 gma_file,
                 False,
                 result.returncode,
-                "fastgmad could not extract this file. "
-                "Close programs using it or verify the file is valid.",
+                f"fastgmad could not extract this file. {err_msg}",
             )
 
         return _outcome(gma_file, True, result.returncode)
 
-    except OSError:
+    except OSError as exc:
         return _outcome(
             gma_file,
             False,
-            error="Could not run fastgmad. "
-            "Check that the executable exists and is not blocked.",
+            error=f"Could not run fastgmad ({exc}). Check that the executable exists and is not blocked.",
         )
 
 
@@ -180,7 +179,6 @@ def move_files_to_leftover(files, leftover_dir):
             continue
 
         dest = leftover / file.name
-
         dest = unique_name(dest)
 
         try:
@@ -188,10 +186,9 @@ def move_files_to_leftover(files, leftover_dir):
             moved += 1
         except OSError as exc:
             logger.error(
-                "Could not move %s. Check that the file is not open and you have permission.",
-                file.name,
+                "Could not move %s. Check that the file is not open and you have permission. Reason: %s",
+                file.name, exc
             )
-            logger.debug("Move failure: %s", exc)
 
     return moved
 
@@ -206,10 +203,9 @@ def prepare_executables(exec_paths):
             os.chmod(path, path.stat().st_mode | stat.S_IEXEC)
         except OSError as exc:
             logger.warning(
-                "Could not mark %s as executable. If it fails to run, check permissions.",
-                name,
+                "Could not mark %s as executable. If it fails to run, check permissions. Reason: %s",
+                name, exc
             )
-            logger.debug("chmod failure: %s", exc)
 
 
 def _process_parallel(
@@ -237,8 +233,7 @@ def _process_parallel(
                     outcome = _outcome(
                         Path(source),
                         False,
-                        error="Unexpected problem while extracting. "
-                        "Check file access and permissions.",
+                        error=f"Unexpected problem while extracting: {exc}",
                     )
                     logger.debug("%s extraction exception: %s", debug_label, exc)
 

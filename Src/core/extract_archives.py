@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
 from pathlib import Path
 from shutil import move
-from subprocess import DEVNULL, run
+from subprocess import DEVNULL, PIPE, run
 from time import time
 from zipfile import ZipFile
 
@@ -88,10 +88,12 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             result = run(
                 [seven_zip_path, "x", str(archive_path), f"-o{output_dir}", "-y"],
                 stdout=DEVNULL,
-                stderr=DEVNULL,
+                stderr=PIPE,
+                text=True,
             )
             if result.returncode != 0:
-                raise RuntimeError(f"7-Zip exited with code {result.returncode}")
+                err_msg = result.stderr.strip() or f"exited with code {result.returncode}"
+                raise RuntimeError(f"7-Zip failed: {err_msg}")
 
         elif extension in {".zip", ".rar"}:
             handler = ARCHIVE_HANDLERS[extension]
@@ -104,9 +106,9 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             except tarfile.TarError as e:
                 error_msg = str(e)
                 if "truncated" in error_msg.lower():
-                    raise RuntimeError("Invalid tar archive: file appears truncated")
+                    raise RuntimeError(f"Invalid tar archive: file appears truncated ({error_msg})")
                 elif "not a" in error_msg.lower():
-                    raise RuntimeError("File is not a valid tar archive")
+                    raise RuntimeError(f"File is not a valid tar archive ({error_msg})")
                 else:
                     raise RuntimeError(f"Tar extraction error: {error_msg}")
 
