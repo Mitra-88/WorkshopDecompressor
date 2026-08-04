@@ -31,8 +31,8 @@ Both tools can extract Garry's Mod addons, but they take different approaches. G
 
 ## System Requirements
 
-**RAM Usage:** 30MB<br>
-**Disk Space:** 40MB
+**RAM Usage:** 40MB<br>
+**Disk Space:** 25MB
 
 | Operating System | Supported Versions                                       | Architecture | Tested   |
 |------------------|----------------------------------------------------------|--------------|----------|
