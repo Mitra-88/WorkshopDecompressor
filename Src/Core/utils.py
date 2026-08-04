@@ -1,14 +1,12 @@
 import platform
 import threading
-from datetime import datetime
 from os import rmdir, scandir
 from pathlib import Path
-from uuid import uuid4
 
 excluded_directories = frozenset({"Bin", "Leftover", "_internal", "Extracted-Addons"})
 
-app_version = f"v2.8.0 ({uuid4().hex[:7]})"
-build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d)")
+app_version = f"v2.8.0 (bc20d84)"
+build_date = "2026-08-04 (Tuesday, August 04)"
 
 _unique_name_lock = threading.Lock()
 _reserved_paths = set()
