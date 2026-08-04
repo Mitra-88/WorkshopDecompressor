@@ -52,11 +52,13 @@ Download the Latest Release:
 **If you use SteamCMD:**
 Drop the Workshop Decompressor into this folder:
 `steamcmd/steamapps/workshop/content/4000`
-That’s where all your downloaded GMod addons live.
+That’s where all your downloaded GMod addons live. (`.gma`, `.bin` files)
 
 <img src="Assets/Screenshot-1.png" alt="Example-1">
 
-**If you use anything else (web downloads, random folders, cracked GMod, etc.):**
+---
+
+**If you use anything else (web downloads, random folders, offline versions of GMod, etc.):**
 Put Workshop Decompressor in the same folder where your `.gma`, `.bin`, or archive files are.
 
 That’s it.
