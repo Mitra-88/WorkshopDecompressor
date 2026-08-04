@@ -5,7 +5,7 @@
   <img src="Assets/Icon/WorkshopDecompressor-README.png" alt="Yeah" width="256" height="256">
 </div>
 
-**Workshop Decompressor** is a command-line tool for players of Garry's Mod who need to extract content from addon files. This utility supports both modern `.gma` addons and legacy `.bin` addons, a tool for players who download addons from sources such as SteamCMD, third-party programs, websites, or for those using cracked versions of the game.
+**Workshop Decompressor** is a command-line tool for players of Garry's Mod who need to extract content from addon files. This utility supports both modern `.gma` addons and legacy `.bin` addons, a tool for players who download addons from sources such as SteamCMD, third-party programs, websites, or for those using offline versions of the game.
 
 ## Key Features
 
