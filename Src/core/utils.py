@@ -1,18 +1,50 @@
 import platform
+import sys
 import threading
 from datetime import datetime
 from os import cpu_count, rmdir, scandir
 from pathlib import Path
-from subprocess import DEVNULL, PIPE, run
-from uuid import uuid4
+from subprocess import DEVNULL, PIPE, SubprocessError, run
 
 excluded_directories = frozenset({"Bin", "Leftover", "_internal", "Extracted-Addons"})
 
-app_version = f"v2.8.0 ({uuid4().hex[:7]})"
-build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d)")
-
 _unique_name_lock = threading.Lock()
 _reserved_paths = set()
+
+
+def _git_commit():
+    if getattr(sys, "frozen", False):
+        try:
+            commit_file = Path(getattr(sys, "_MEIPASS", ".")) / "build_commit.txt"
+            return commit_file.read_text(encoding="utf-8").strip() or "release"
+        except OSError:
+            return "release"
+    try:
+        result = run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True,
+            cwd=Path(__file__).resolve().parents[2],
+        )
+        return result.stdout.strip() or "dev"
+    except OSError, SubprocessError:
+        return "dev"
+
+
+def _build_time():
+    if getattr(sys, "frozen", False):
+        try:
+            return datetime.fromtimestamp(Path(sys.executable).stat().st_mtime)
+        except OSError:
+            pass
+    return datetime.now()
+
+
+APP_VERSION = "2.8.0"
+app_version = f"v{APP_VERSION} ({_git_commit()})"
+build_date = _build_time().strftime("%Y-%m-%d (%A, %B %d)")
 
 
 def extraction_workers(max_workers, cores=None):
@@ -27,6 +59,7 @@ def _sevenzip_pass(seven_zip_path, archive_path, output_dir):
         stderr=PIPE,
         text=True,
         errors="replace",
+        check=False,
     )
     message = result.stderr.strip() or f"exited with code {result.returncode}"
     return result.returncode, message
@@ -34,7 +67,11 @@ def _sevenzip_pass(seven_zip_path, archive_path, output_dir):
 
 def _single_inner_tar(output_dir):
     entries = list(output_dir.iterdir())
-    if len(entries) == 1 and entries[0].is_file() and entries[0].name.lower().endswith(".tar"):
+    if (
+        len(entries) == 1
+        and entries[0].is_file()
+        and entries[0].name.lower().endswith(".tar")
+    ):
         return entries[0]
     return None
 
@@ -131,7 +168,7 @@ def get_system_info() -> str:
             name = os_release.get("NAME", "Linux")
             version = os_release.get("VERSION") or os_release.get("VERSION_ID") or ""
             return join_parts(name, version, arch)
-        except (AttributeError, OSError):
+        except AttributeError, OSError:
             return join_parts(system, platform.release(), arch)
 
     if system == "Darwin":
@@ -169,7 +206,7 @@ def remove_empty_directories(directory, excluded=excluded_directories):
     try:
         with scandir(dir_path) as entries:
             children = list(entries)
-    except (PermissionError, FileNotFoundError):
+    except PermissionError, FileNotFoundError:
         return 0
 
     for entry in children:
@@ -180,7 +217,7 @@ def remove_empty_directories(directory, excluded=excluded_directories):
         with scandir(dir_path) as entries:
             if any(True for _ in entries):
                 return deleted
-    except (PermissionError, FileNotFoundError):
+    except PermissionError, FileNotFoundError:
         return deleted
 
     try:

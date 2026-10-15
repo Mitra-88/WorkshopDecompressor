@@ -11,11 +11,20 @@ sys.path.insert(0, str(CORE_DIR))
 
 import extract_addons
 import extract_archives
-from utils import extraction_workers, get_system_info, join_parts, run_sevenzip_extraction
+from utils import (
+    app_version,
+    build_date,
+    extraction_workers,
+    get_system_info,
+    join_parts,
+    run_sevenzip_extraction,
+)
 
 TEST_DIR = Path(__file__).resolve().parent
 SYSTEM = platform.system()
-SEVEN_ZIP = TEST_DIR.parent / "Bin" / SYSTEM / ("7z.exe" if SYSTEM == "Windows" else "7z")
+SEVEN_ZIP = (
+    TEST_DIR.parent / "Bin" / SYSTEM / ("7z.exe" if SYSTEM == "Windows" else "7z")
+)
 
 
 class SevenZipDetectionTests(unittest.TestCase):
@@ -67,8 +76,11 @@ class SevenZipDetectionTests(unittest.TestCase):
         self.assertEqual(returncode, 0)
 
     def test_gma_extraction_still_works(self):
-        fastgmad = TEST_DIR.parent / "Bin" / SYSTEM / (
-            "fastgmad.exe" if SYSTEM == "Windows" else "fastgmad"
+        fastgmad = (
+            TEST_DIR.parent
+            / "Bin"
+            / SYSTEM
+            / ("fastgmad.exe" if SYSTEM == "Windows" else "fastgmad")
         )
         gma_copy = self.tmp / "Modern-Addon.gma"
         gma_copy.write_bytes((TEST_DIR / "Modern-Addon.gma").read_bytes())
@@ -84,7 +96,9 @@ class SevenZipDetectionTests(unittest.TestCase):
         leftover = self.tmp / "Leftover"
         leftover.mkdir()
 
-        outcome = extract_archives.extract_archive(archive_copy, leftover, str(SEVEN_ZIP))
+        outcome = extract_archives.extract_archive(
+            archive_copy, leftover, str(SEVEN_ZIP)
+        )
 
         self.assertTrue(outcome["success"], outcome["error"])
         extracted = [p for p in self.tmp.glob("Sample*/**/*") if p.is_file()]
@@ -97,7 +111,9 @@ class SevenZipDetectionTests(unittest.TestCase):
         leftover = self.tmp / "Leftover"
         leftover.mkdir()
 
-        outcome = extract_archives.extract_archive(archive_copy, leftover, str(SEVEN_ZIP))
+        outcome = extract_archives.extract_archive(
+            archive_copy, leftover, str(SEVEN_ZIP)
+        )
 
         self.assertTrue(outcome["success"], outcome["error"])
         self.assertTrue(any(self.tmp.glob("My.Addon*/**")))
@@ -108,7 +124,9 @@ class SevenZipDetectionTests(unittest.TestCase):
         leftover = self.tmp / "Leftover"
         leftover.mkdir()
 
-        outcome = extract_archives.extract_archive(archive_copy, leftover, str(SEVEN_ZIP))
+        outcome = extract_archives.extract_archive(
+            archive_copy, leftover, str(SEVEN_ZIP)
+        )
 
         self.assertFalse(outcome["success"])
         self.assertTrue(outcome["error"])
@@ -142,7 +160,9 @@ class SevenZipDetectionTests(unittest.TestCase):
             )
 
             self.assertTrue(outcome["success"], outcome["error"])
-            extracted = list(self.tmp.glob(f"{Path(name).stem.removesuffix('.tar')}*/**/Sample.txt"))
+            extracted = list(
+                self.tmp.glob(f"{Path(name).stem.removesuffix('.tar')}*/**/Sample.txt")
+            )
             self.assertTrue(extracted, f"Sample.txt not extracted from {name}")
             leftovers = list(leftover.glob("*.tar"))
             self.assertFalse(leftovers, f"intermediate tar left behind for {name}")
@@ -157,7 +177,9 @@ class SevenZipDetectionTests(unittest.TestCase):
         exec_paths = {
             "7z": str(SEVEN_ZIP),
             "fastgmad": str(
-                TEST_DIR.parent / "Bin" / SYSTEM
+                TEST_DIR.parent
+                / "Bin"
+                / SYSTEM
                 / ("fastgmad.exe" if SYSTEM == "Windows" else "fastgmad")
             ),
         }
@@ -195,6 +217,14 @@ class SystemInfoTests(unittest.TestCase):
         self.assertTrue(info)
         self.assertNotIn("  ", info)
         self.assertNotIn(chr(10), info)
+
+
+class VersionIdentityTests(unittest.TestCase):
+    def test_app_version_names_a_real_build(self):
+        self.assertRegex(app_version, r"^v2\.8\.0 \((?:[0-9a-f]{7}|dev|release)\)$")
+
+    def test_build_date_starts_with_a_date(self):
+        self.assertRegex(build_date, r"^\d{4}-\d{2}-\d{2} \(")
 
 
 if __name__ == "__main__":
