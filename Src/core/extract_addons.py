@@ -8,8 +8,14 @@ from time import time
 
 import ui
 from get_executable import ensure_executable_paths
-from utils import (excluded_directories, extraction_workers, format_time,
-                   remove_empty_directories, run_sevenzip_extraction, unique_name)
+from utils import (
+    excluded_directories,
+    extraction_workers,
+    format_time,
+    remove_empty_directories,
+    run_sevenzip_extraction,
+    unique_name,
+)
 
 logger = logging.getLogger("workshop.addons")
 
@@ -84,7 +90,8 @@ def add_extension_to_files_without_format(start_dir="."):
             except OSError as exc:
                 logger.error(
                     "Could not rename %s. Check that the file is not open or locked. Reason: %s",
-                    filename, exc
+                    filename,
+                    exc,
                 )
 
     return renamed
@@ -147,6 +154,7 @@ def extract_gma_file(gma_file, fastgmad_path):
             stderr=PIPE,
             text=True,
             errors="replace",
+            check=False,
         )
 
         if result.returncode != 0:
@@ -189,7 +197,8 @@ def move_files_to_leftover(files, leftover_dir):
         except OSError as exc:
             logger.error(
                 "Could not move %s. Check that the file is not open and you have permission. Reason: %s",
-                file.name, exc
+                file.name,
+                exc,
             )
 
     return moved
@@ -208,38 +217,40 @@ def _process_parallel(
     failures = []
     warnings = []
 
-    with progress_factory(stage, description, len(files)) as advance:
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            futures = {executor.submit(worker, file, tool_path): file for file in files}
+    with (
+        progress_factory(stage, description, len(files)) as advance,
+        ThreadPoolExecutor(max_workers=workers) as executor,
+    ):
+        futures = {executor.submit(worker, file, tool_path): file for file in files}
 
-            try:
-                for future in as_completed(futures):
-                    source = futures[future]
+        try:
+            for future in as_completed(futures):
+                source = futures[future]
 
-                    try:
-                        outcome = future.result()
-                    except Exception as exc:
-                        outcome = _outcome(
-                            Path(source),
-                            False,
-                            error=f"Unexpected problem while extracting: {exc}",
-                        )
-                        logger.debug("%s extraction exception: %s", debug_label, exc)
+                try:
+                    outcome = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    outcome = _outcome(
+                        Path(source),
+                        False,
+                        error=f"Unexpected problem while extracting: {exc}",
+                    )
+                    logger.debug("%s extraction exception: %s", debug_label, exc)
 
-                    processed += 1
+                processed += 1
 
-                    if not outcome["success"]:
-                        failures.append(outcome)
-                        _log_extraction_failure(outcome)
-                    elif outcome.get("warning"):
-                        warnings.append(
-                            {"file": Path(source), "message": outcome["warning"]}
-                        )
+                if not outcome["success"]:
+                    failures.append(outcome)
+                    _log_extraction_failure(outcome)
+                elif outcome.get("warning"):
+                    warnings.append(
+                        {"file": Path(source), "message": outcome["warning"]}
+                    )
 
-                    advance()
-            except KeyboardInterrupt:
-                executor.shutdown(wait=False, cancel_futures=True)
-                raise
+                advance()
+        except KeyboardInterrupt:
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
 
     return processed, failures, warnings
 

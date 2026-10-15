@@ -8,8 +8,13 @@ from pathlib import Path
 from rich.console import Console
 from rich.logging import RichHandler
 from rich.panel import Panel
-from rich.progress import (BarColumn, Progress, SpinnerColumn, TextColumn,
-                           TimeElapsedColumn)
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 from rich.prompt import Prompt
 from rich.table import Table
 from rich.text import Text
@@ -73,7 +78,7 @@ class CleanRichHandler(RichHandler):
             line.append(record.getMessage(), style="log.message")
 
             self.console.print(line)
-        except Exception:
+        except Exception:  # noqa: BLE001
             self.handleError(record)
 
 

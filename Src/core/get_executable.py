@@ -36,7 +36,8 @@ def prepare_executables(exec_paths):
         except OSError as exc:
             logger.warning(
                 "Could not mark %s as executable. If it fails to run, check permissions. Reason: %s",
-                name, exc
+                name,
+                exc,
             )
 
         if system == "Darwin":
@@ -45,11 +46,13 @@ def prepare_executables(exec_paths):
                     ["xattr", "-d", "com.apple.quarantine", str(path)],
                     stdout=DEVNULL,
                     stderr=DEVNULL,
+                    check=False,
                 )
             except OSError as exc:
                 logger.warning(
                     "Could not clear the macOS quarantine flag on %s. If macOS refuses to open it, right-click it and choose Open. Reason: %s",
-                    name, exc
+                    name,
+                    exc,
                 )
 
 

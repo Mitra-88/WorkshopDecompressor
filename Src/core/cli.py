@@ -74,14 +74,14 @@ def main():
                 handle_choice(choice)
             except SystemExit:
                 raise
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001
                 logger.error("Something failed unexpectedly: %s", exc)
                 logger.error(
                     "Check that the folder is writable and that files are not open or in use."
                 )
                 ui.pause()
 
-    except (KeyboardInterrupt, EOFError):
+    except KeyboardInterrupt, EOFError:
         ui.render_spacer()
         ui.render_message("Force quitting...", "error")
         sys.exit(0)

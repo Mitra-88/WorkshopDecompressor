@@ -25,7 +25,9 @@ MIN_SIZE = 400 * 1024
 MAX_SIZE = 60 * 1024 * 1024
 SEED = 20260924
 WRITE_CHUNK = 1024 * 1024
-DIST_MODE = "--dist" in sys.argv or os.environ.get("WD_VOLUME_TARGET", "").lower() == "dist"
+DIST_MODE = (
+    "--dist" in sys.argv or os.environ.get("WD_VOLUME_TARGET", "").lower() == "dist"
+)
 GENERATE_ONLY = "--generate-only" in sys.argv
 REPO_ROOT = TEST_DIR.parent.parent
 
@@ -75,7 +77,9 @@ class GmaVolumeTests(unittest.TestCase):
         tmp.mkdir(parents=True, exist_ok=True)
         os.chdir(tmp)
         self.addCleanup(os.chdir, old_cwd)
-        self.addCleanup(lambda: None if keep else shutil.rmtree(tmp, ignore_errors=True))
+        self.addCleanup(
+            lambda: None if keep else shutil.rmtree(tmp, ignore_errors=True)
+        )
 
         rng = random.Random(SEED)
         total_bytes = 0
@@ -93,7 +97,10 @@ class GmaVolumeTests(unittest.TestCase):
         for index in range(TOTAL_BINS):
             unit = rng.random() ** 4
             inner_size = int(MIN_SIZE + (MAX_SIZE - MIN_SIZE) * unit)
-            inner_gma = build_gma(f"build/legacy_{index}.bin", inner_size) + b"\x00" * inner_size
+            inner_gma = (
+                build_gma(f"build/legacy_{index}.bin", inner_size)
+                + b"\x00" * inner_size
+            )
             bin_path = tmp / f"legacy_{index:03d}.bin"
             bin_path.write_bytes(
                 lzma.compress(inner_gma, format=lzma.FORMAT_ALONE, preset=1)

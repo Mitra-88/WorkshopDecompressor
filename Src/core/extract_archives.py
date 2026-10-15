@@ -7,18 +7,31 @@ from time import time
 
 import ui
 from get_executable import ensure_executable_paths
-from utils import (excluded_directories, extraction_workers, format_time,
-                   remove_empty_directories, run_sevenzip_extraction, unique_name)
+from utils import (
+    excluded_directories,
+    extraction_workers,
+    format_time,
+    remove_empty_directories,
+    run_sevenzip_extraction,
+    unique_name,
+)
 
 logger = logging.getLogger("workshop.archives")
 
 MAX_WORKERS = 10
 workers = extraction_workers(MAX_WORKERS)
 
-ARCHIVE_EXTENSIONS = frozenset({
-    ".zip", ".rar", ".7z", ".tar",
-    ".tar.gz", ".tar.xz", ".tar.bz2",
-})
+ARCHIVE_EXTENSIONS = frozenset(
+    {
+        ".zip",
+        ".rar",
+        ".7z",
+        ".tar",
+        ".tar.gz",
+        ".tar.xz",
+        ".tar.bz2",
+    }
+)
 
 ARCHIVE_WARNING_LINES = (
     "Archive extraction modifies files.",
@@ -81,9 +94,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
         warning = None
         if returncode >= 2:
             warning = f"7-Zip reported: {message}"
-            logger.warning(
-                "Extracted %s, but %s", archive_path.name, message
-            )
+            logger.warning("Extracted %s, but %s", archive_path.name, message)
 
         dest = leftover_dir / archive_path.name
 
@@ -99,7 +110,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             "warning": warning,
         }
 
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         error_msg = str(e)
         if not error_msg:
             error_msg = f"{type(e).__name__}: Unknown error"
@@ -124,41 +135,43 @@ def _process_parallel_archives(
     failures = []
     warnings = []
 
-    with progress_factory(stage, description, len(files)) as advance:
-        with ThreadPoolExecutor(max_workers=workers) as executor:
-            futures = {
-                executor.submit(worker, file, leftover_dir, tool_path): file
-                for file in files
-            }
+    with (
+        progress_factory(stage, description, len(files)) as advance,
+        ThreadPoolExecutor(max_workers=workers) as executor,
+    ):
+        futures = {
+            executor.submit(worker, file, leftover_dir, tool_path): file
+            for file in files
+        }
 
-            try:
-                for future in as_completed(futures):
-                    source = futures[future]
+        try:
+            for future in as_completed(futures):
+                source = futures[future]
 
-                    try:
-                        outcome = future.result()
-                    except Exception as exc:
-                        outcome = {
-                            "file": Path(source),
-                            "success": False,
-                            "error": f"Unexpected problem: {exc}",
-                        }
-                        logger.debug("Archive extraction exception: %s", exc)
+                try:
+                    outcome = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    outcome = {
+                        "file": Path(source),
+                        "success": False,
+                        "error": f"Unexpected problem: {exc}",
+                    }
+                    logger.debug("Archive extraction exception: %s", exc)
 
-                    processed += 1
+                processed += 1
 
-                    if not outcome["success"]:
-                        failures.append(outcome)
-                        _log_archive_failure(outcome)
-                    elif outcome.get("warning"):
-                        warnings.append(
-                            {"file": Path(source), "message": outcome["warning"]}
-                        )
+                if not outcome["success"]:
+                    failures.append(outcome)
+                    _log_archive_failure(outcome)
+                elif outcome.get("warning"):
+                    warnings.append(
+                        {"file": Path(source), "message": outcome["warning"]}
+                    )
 
-                    advance()
-            except KeyboardInterrupt:
-                executor.shutdown(wait=False, cancel_futures=True)
-                raise
+                advance()
+        except KeyboardInterrupt:
+            executor.shutdown(wait=False, cancel_futures=True)
+            raise
 
     return processed, failures, warnings
 
