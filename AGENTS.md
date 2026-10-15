@@ -1,3 +1,64 @@
+## What this is
+
+WorkshopDecompressor is a cross-platform console tool that extracts Garry's Mod workshop addons and common archives. It never unpacks anything itself: every `.gma` goes through the bundled `fastgmad` binary and every `.bin` and archive (.zip, .rar, .7z, .tar, .tar.gz, .tar.xz, .tar.bz2) goes through the bundled 7-Zip binary, both shipped per-OS under `Src/Bin`. The Python code only finds files, runs those tools with a bounded thread pool, and renders progress and summaries through Rich. Packaging is PyInstaller onefile, one frozen build per OS, produced by the single GitHub workflow.
+
+## Build & run
+
+Dependencies: Python 3.15+ (`requires-python = ">=3.15"` in `pyproject.toml`), managed by uv. `uv sync` builds the `.venv` from the pinned `.python-version` (3.15) and installs rich, pyinstaller and the dev group (ruff) from the committed `uv.lock`. There is no requirements.txt anymore. uv manages the interpreter itself (python-build-standalone builds, downloaded on first use, `uv python dir` shows where); upgrading Python across minors means `uv python pin <version>` plus re-locking.
+
+Run from source, from the folder you want to extract into:
+
+```sh
+.venv/Scripts/python.exe Src/core/cli.py
+```
+
+Tests: `.venv/Scripts/python.exe -m unittest discover -s Src/Test -v` (headless, no network). The full run includes the volume test that writes about 1 GB; the fast subset is `-p "test_sevenzip_detection.py"`, and that is the only thing CI runs.
+
+Packaging: the three per-OS jobs in `.github/workflows/build.yml` are the source of truth. Each installs uv, `uv python install 3.15`, `uv sync --frozen` with the uv cache keyed on `uv.lock`, runs the fast tests, writes `Src/build_commit.txt` from `git rev-parse`, builds the PyInstaller onefile with `--add-data` for that file, copies `Src/Bin` into dist and deletes the other platforms' binaries.
+
+## How the app works
+
+`cli.py` shows a Rich menu. Extract Addons (`extract_addons.run_addon_extraction`) walks the current folder recursively, pruning `excluded_directories` (Bin, Leftover, _internal, Extracted-Addons) in place, extracts every `.bin` through 7-Zip and every `.gma` through fastgmad via `_process_parallel` on a `ThreadPoolExecutor` capped by `extraction_workers` (min of the per-mode MAX_WORKERS, cores-2, and 3/4 of cores), renames extension-less files to `.gma`, moves processed sources into `Leftover`, and cleans empty directories. Extract Archives (`extract_archives.run_archive_extraction`) is the same pipeline for archive extensions, each extracted into a folder named after its stem, then moved into `Leftover`.
+
+`utils.run_sevenzip_extraction` is the single 7-Zip runner and the heart of the tool: success means "files appeared in the output dir", because 7-Zip exits with code 2 on legacy `.bin` addons that carry trailing bytes after the lzma payload even though extraction succeeded; returncode >= 2 with extracted content becomes a warning collected into the summary, not a failure. When the output is a single inner `.tar` (the .tar.gz/.xz/.bz2 shapes) a second 7-Zip pass unpacks it and removes the intermediate. Worker exceptions never kill the run, they become failure dicts logged per file.
+
+`unique_name` is thread-safe: under a lock it hands out non-existing, reserved candidate paths so parallel extractions cannot collide on `Extracted-Bin` names or Leftover destinations. Frozen builds take the version commit from `build_commit.txt` (bundled into `sys._MEIPASS` via `--add-data`) and the build date from the exe's mtime; dev builds run `git rev-parse` at import and use the run date. `get_executable.locate_executables` finds the bundled binaries next to the exe in frozen builds or under `Src/Bin` in dev, and `prepare_executables` chmods them executable and clears the macOS quarantine xattr before first use.
+
+## Codebase tour
+
+- `Src/core/cli.py`: entry point, menu loop, build info panel (dependency versions via importlib.metadata), and the per-choice crash guard.
+- `Src/core/extract_addons.py`: .bin/.gma discovery, the parallel addon pipeline, Leftover moves, summary dict.
+- `Src/core/extract_archives.py`: archive discovery and extraction, same pipeline shape.
+- `Src/core/get_executable.py`: bundled-tool discovery, chmod+x, xattr quarantine removal, manual-path prompts.
+- `Src/core/ui.py`: every Rich render (banner, menu, progress, tables, prompts) and the logging setup; the only module that talks to the terminal.
+- `Src/core/utils.py`: version identity, worker math, the 7-Zip runner, unique_name, system info, empty-dir cleanup.
+- `Src/Bin/{Windows,Linux,Darwin}/`: the bundled 7z + fastgmad binaries with their licenses; each CI job ships only its own OS's pair.
+- `Src/Test/`: unittest suite plus sample fixtures; `test_gma_volume.py --dist` only generates the fake addons for manual testing.
+
+## Settled decisions
+
+- All extraction goes through the bundled binaries (7-Zip + fastgmad). No rarfile, py7zr, zipfile or tarfile: users have nothing to install.
+- unittest, not pytest. ruff for formatting and lint, no CI lint step.
+- One `build.yml` with three per-OS jobs, uv end to end, `uv.lock` committed.
+- Release identity is frozen from `build_commit.txt` plus the exe mtime so bug reports name a real build, never a per-run random id.
+- Rich owns the whole console; all logging goes through its one handler.
+
+## Where to look things up
+
+Every third-party library this project uses is installed in `.venv\Lib\site-packages`: rich and PyInstaller. The stdlib of the installed interpreter is there too. **This is mandatory and enforced:** never write an import or a call from memory. Before using any third-party API, open the package under `.venv\Lib\site-packages` and confirm the symbol, signature, and behavior actually exist there in the installed version. If it is not in site-packages, it does not exist for this project: do not add a dependency without asking.
+
+## Gotchas & quirks
+
+- 7-Zip exits with code 2 on legacy `.bin` addons ("data after the end of the payload data") even though extraction succeeded: content presence is the truth signal, nonzero codes only become warnings when files landed. Do not "fix" this into failing on nonzero codes.
+- `get_executable._get_base_dir` differs on purpose: frozen builds look next to the exe, dev builds look at `Src/`. PyInstaller onefile's `sys._MEIPASS` is a temp dir, which is why `Src/Bin` is copied next to the exe in dist and never `--add-data`ed.
+- `build_commit.txt` is written by CI and bundled via `--add-data` with `;` as the separator on Windows and `:` on POSIX. Missing or empty file means `release`, no git repo in dev means `dev`; a source zip has no git repo and that is fine.
+- `APP_VERSION` in `Src/core/utils.py` must stay in sync with `version.txt` and the `version` in `pyproject.toml`.
+- The walkers prune `excluded_directories` in place (`dirnames[:] = ...`); without the prune the tool would recurse into its own output and the Leftover copies.
+- `set_cli_title` guards `isatty()`: piped output (tests, CI logs) must never receive ANSI title escapes; Windows goes through the ctypes console call instead.
+- fastgmad subprocesses decode text with `errors="replace"`: some .gma metadata carries undecodable bytes and a UnicodeDecodeError in the reader would masquerade as an extraction failure.
+- The `except Exception  # noqa: BLE001` guards (cli menu loop, worker futures, extract_archive, RichHandler.emit) are deliberate crash and parallelism boundaries: any per-file error must become a failure dict or a log line, never a dead UI. Do not narrow them or remove the noqa.
+- ruff targets 3.15, so it strips redundant parentheses around multi-exception `except` clauses (PEP 758). That syntax is intentional and needs Python 3.14+ to parse.
+
 ## Coding rules (mandatory: apply to every change)
 
 **Purpose:** implement only what is genuinely necessary for the requested feature.
