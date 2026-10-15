@@ -1,38 +1,24 @@
 import logging
-import os
-import tarfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
 from pathlib import Path
 from shutil import move
-from subprocess import DEVNULL, PIPE, run
 from time import time
-from zipfile import ZipFile
 
 import ui
 from get_executable import ensure_executable_paths
-from rarfile import RarFile
-from utils import (excluded_directories, format_time, remove_empty_directories,
-                   unique_name)
+from utils import (excluded_directories, extraction_workers, format_time,
+                   remove_empty_directories, run_sevenzip_extraction, unique_name)
 
 logger = logging.getLogger("workshop.archives")
 
 MAX_WORKERS = 10
-system_cores = os.cpu_count() or 2
-workers = min(MAX_WORKERS, max(1, system_cores - 2))
+workers = extraction_workers(MAX_WORKERS)
 
-ARCHIVE_HANDLERS = {
-    ".zip": ZipFile,
-    ".rar": RarFile,
-    ".tar": tarfile.open,
-    ".tar.gz": tarfile.open,
-    ".tgz": tarfile.open,
-    ".tar.bz2": tarfile.open,
-    ".tar.xz": tarfile.open,
-}
-
-SEVEN_ZIP_EXTENSIONS = frozenset({".7z"})
-ARCHIVE_EXTENSIONS = frozenset(ARCHIVE_HANDLERS.keys()) | SEVEN_ZIP_EXTENSIONS
+ARCHIVE_EXTENSIONS = frozenset({
+    ".zip", ".rar", ".7z", ".tar",
+    ".tar.gz", ".tar.xz", ".tar.bz2",
+})
 
 ARCHIVE_WARNING_LINES = (
     "Archive extraction modifies files.",
@@ -56,7 +42,7 @@ def _get_archive_extension(filename):
     path = Path(filename)
     name_lower = path.name.lower()
 
-    for compound_ext in [".tar.gz", ".tar.bz2", ".tar.xz", ".tgz"]:
+    for compound_ext in [".tar.gz", ".tar.xz", ".tar.bz2"]:
         if name_lower.endswith(compound_ext):
             return compound_ext
 
@@ -81,36 +67,23 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
 
     try:
         extension = _get_archive_extension(archive_path.name)
-        output_dir = unique_name(archive_path.name.split(".")[0])
+        stem = archive_path.name[: -len(extension)] or "archive"
+        output_dir = unique_name(stem)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-        if extension in SEVEN_ZIP_EXTENSIONS:
-            result = run(
-                [seven_zip_path, "x", str(archive_path), f"-o{output_dir}", "-y"],
-                stdout=DEVNULL,
-                stderr=PIPE,
-                text=True,
-            )
-            if result.returncode != 0:
-                err_msg = result.stderr.strip() or f"exited with code {result.returncode}"
-                raise RuntimeError(f"7-Zip failed: {err_msg}")
+        extracted, returncode, message = run_sevenzip_extraction(
+            seven_zip_path, archive_path, output_dir
+        )
 
-        elif extension in {".zip", ".rar"}:
-            handler = ARCHIVE_HANDLERS[extension]
-            with handler(str(archive_path), "r") as archive:
-                archive.extractall(output_dir)
-        else:
-            try:
-                with tarfile.open(str(archive_path), "r") as archive:
-                    archive.extractall(output_dir, filter="data")
-            except tarfile.TarError as e:
-                error_msg = str(e)
-                if "truncated" in error_msg.lower():
-                    raise RuntimeError(f"Invalid tar archive: file appears truncated ({error_msg})")
-                elif "not a" in error_msg.lower():
-                    raise RuntimeError(f"File is not a valid tar archive ({error_msg})")
-                else:
-                    raise RuntimeError(f"Tar extraction error: {error_msg}")
+        if not extracted:
+            raise RuntimeError(f"7-Zip failed: {message}")
+
+        warning = None
+        if returncode >= 2:
+            warning = f"7-Zip reported: {message}"
+            logger.warning(
+                "Extracted %s, but %s", archive_path.name, message
+            )
 
         dest = leftover_dir / archive_path.name
 
@@ -123,6 +96,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             "file": archive_path,
             "success": True,
             "error": None,
+            "warning": warning,
         }
 
     except Exception as e:
@@ -148,6 +122,7 @@ def _process_parallel_archives(
 ):
     processed = 0
     failures = []
+    warnings = []
 
     with progress_factory(stage, description, len(files)) as advance:
         with ThreadPoolExecutor(max_workers=workers) as executor:
@@ -156,28 +131,36 @@ def _process_parallel_archives(
                 for file in files
             }
 
-            for future in as_completed(futures):
-                source = futures[future]
+            try:
+                for future in as_completed(futures):
+                    source = futures[future]
 
-                try:
-                    outcome = future.result()
-                except Exception as exc:
-                    outcome = {
-                        "file": Path(source),
-                        "success": False,
-                        "error": f"Unexpected problem: {exc}",
-                    }
-                    logger.debug("Archive extraction exception: %s", exc)
+                    try:
+                        outcome = future.result()
+                    except Exception as exc:
+                        outcome = {
+                            "file": Path(source),
+                            "success": False,
+                            "error": f"Unexpected problem: {exc}",
+                        }
+                        logger.debug("Archive extraction exception: %s", exc)
 
-                processed += 1
+                    processed += 1
 
-                if not outcome["success"]:
-                    failures.append(outcome)
-                    _log_archive_failure(outcome)
+                    if not outcome["success"]:
+                        failures.append(outcome)
+                        _log_archive_failure(outcome)
+                    elif outcome.get("warning"):
+                        warnings.append(
+                            {"file": Path(source), "message": outcome["warning"]}
+                        )
 
-                advance()
+                    advance()
+            except KeyboardInterrupt:
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise
 
-    return processed, failures
+    return processed, failures, warnings
 
 
 def run_archive_extraction(progress_factory=None, seven_zip_path=None):
@@ -195,16 +178,23 @@ def run_archive_extraction(progress_factory=None, seven_zip_path=None):
             "found": 0,
             "processed": 0,
             "directories_cleaned": 0,
+            "warnings": [],
             "failures": [],
         }
 
     leftover_dir = Path("Leftover")
-    leftover_dir.mkdir(exist_ok=True)
+    try:
+        leftover_dir.mkdir(exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Cannot write to the current folder ({exc}). "
+            "Move this program to a folder you can write to and run it again."
+        ) from exc
 
     start_time = time()
 
     logger.info("Extracting %d archives using %d cores...", len(archives), workers)
-    processed, failures = _process_parallel_archives(
+    processed, failures, warnings = _process_parallel_archives(
         archives,
         "archive",
         "Extracting archives",
@@ -225,6 +215,7 @@ def run_archive_extraction(progress_factory=None, seven_zip_path=None):
         "found": len(archives),
         "processed": processed,
         "directories_cleaned": deleted_dirs_count,
+        "warnings": warnings,
         "failures": failures,
     }
 

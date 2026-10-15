@@ -1,7 +1,4 @@
 import logging
-import os
-import platform
-import stat
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import nullcontext
 from pathlib import Path
@@ -11,14 +8,13 @@ from time import time
 
 import ui
 from get_executable import ensure_executable_paths
-from utils import (excluded_directories, format_time, remove_empty_directories,
-                   unique_name)
+from utils import (excluded_directories, extraction_workers, format_time,
+                   remove_empty_directories, run_sevenzip_extraction, unique_name)
 
 logger = logging.getLogger("workshop.addons")
 
 MAX_WORKERS = 16
-system_cores = os.cpu_count() or 2
-workers = min(MAX_WORKERS, max(1, system_cores - 2))
+workers = extraction_workers(MAX_WORKERS)
 
 ADDON_WARNING_LINES = (
     "Please close ALL programs using:",
@@ -35,12 +31,13 @@ def _null_stage(stage, description, total):
     return nullcontext(lambda: None)
 
 
-def _outcome(file, success, returncode=None, error=None):
+def _outcome(file, success, returncode=None, error=None, warning=None):
     return {
         "file": file,
         "success": success,
         "returncode": returncode,
         "error": error,
+        "warning": warning,
     }
 
 
@@ -100,23 +97,27 @@ def extract_bin_file(bin_file, seven_zip_path):
         extract_dir = unique_name(bin_file.parent / "Extracted-Bin")
         extract_dir.mkdir(parents=True, exist_ok=True)
 
-        result = run(
-            [seven_zip_path, "x", str(bin_file), f"-o{extract_dir}", "-y"],
-            stdout=DEVNULL,
-            stderr=PIPE,
-            text=True,
+        extracted, returncode, message = run_sevenzip_extraction(
+            seven_zip_path, bin_file, extract_dir
         )
 
-        if result.returncode >= 2 and not any(extract_dir.iterdir()):
-            err_msg = result.stderr.strip() or f"exited with code {result.returncode}"
+        if not extracted:
             return _outcome(
                 bin_file,
                 False,
-                result.returncode,
-                f"7-Zip could not extract this file. {err_msg}",
+                returncode,
+                f"7-Zip could not extract this file. {message}",
             )
 
-        return _outcome(bin_file, True, result.returncode)
+        warning = None
+        if returncode >= 2:
+            warning = (
+                f"7-Zip reported: {message}. This is normal for legacy .bin addons, "
+                "the files were extracted successfully."
+            )
+            logger.warning("Extracted %s, but %s", bin_file.name, warning)
+
+        return _outcome(bin_file, True, returncode, warning=warning)
 
     except OSError as exc:
         return _outcome(
@@ -145,6 +146,7 @@ def extract_gma_file(gma_file, fastgmad_path):
             stdout=DEVNULL,
             stderr=PIPE,
             text=True,
+            errors="replace",
         )
 
         if result.returncode != 0:
@@ -193,21 +195,6 @@ def move_files_to_leftover(files, leftover_dir):
     return moved
 
 
-def prepare_executables(exec_paths):
-    if platform.system() not in ("Linux", "Darwin"):
-        return
-
-    for name, executable_path in exec_paths.items():
-        try:
-            path = Path(executable_path)
-            os.chmod(path, path.stat().st_mode | stat.S_IEXEC)
-        except OSError as exc:
-            logger.warning(
-                "Could not mark %s as executable. If it fails to run, check permissions. Reason: %s",
-                name, exc
-            )
-
-
 def _process_parallel(
     files,
     stage,
@@ -219,33 +206,42 @@ def _process_parallel(
 ):
     processed = 0
     failures = []
+    warnings = []
 
     with progress_factory(stage, description, len(files)) as advance:
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = {executor.submit(worker, file, tool_path): file for file in files}
 
-            for future in as_completed(futures):
-                source = futures[future]
+            try:
+                for future in as_completed(futures):
+                    source = futures[future]
 
-                try:
-                    outcome = future.result()
-                except Exception as exc:
-                    outcome = _outcome(
-                        Path(source),
-                        False,
-                        error=f"Unexpected problem while extracting: {exc}",
-                    )
-                    logger.debug("%s extraction exception: %s", debug_label, exc)
+                    try:
+                        outcome = future.result()
+                    except Exception as exc:
+                        outcome = _outcome(
+                            Path(source),
+                            False,
+                            error=f"Unexpected problem while extracting: {exc}",
+                        )
+                        logger.debug("%s extraction exception: %s", debug_label, exc)
 
-                processed += 1
+                    processed += 1
 
-                if not outcome["success"]:
-                    failures.append(outcome)
-                    _log_extraction_failure(outcome)
+                    if not outcome["success"]:
+                        failures.append(outcome)
+                        _log_extraction_failure(outcome)
+                    elif outcome.get("warning"):
+                        warnings.append(
+                            {"file": Path(source), "message": outcome["warning"]}
+                        )
 
-                advance()
+                    advance()
+            except KeyboardInterrupt:
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise
 
-    return processed, failures
+    return processed, failures, warnings
 
 
 def run_addon_extraction(exec_paths, progress_factory=None):
@@ -258,8 +254,13 @@ def run_addon_extraction(exec_paths, progress_factory=None):
     start_time = time()
 
     logger.info("[1/5] Setting up environment...")
-    prepare_executables(exec_paths)
-    Path("Extracted-Addons").mkdir(exist_ok=True)
+    try:
+        Path("Extracted-Addons").mkdir(exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Cannot write to the current folder ({exc}). "
+            "Move this program to a folder you can write to and run it again."
+        ) from exc
 
     logger.info("[2/5] Scanning for .bin files...")
     bin_files = find_files_with_extension(".bin")
@@ -267,10 +268,11 @@ def run_addon_extraction(exec_paths, progress_factory=None):
 
     bin_processed = 0
     bin_failures = []
+    bin_warnings = []
 
     if bin_files:
         logger.info("[3/5] Extracting .bin files using %d cores...", workers)
-        bin_processed, bin_failures = _process_parallel(
+        bin_processed, bin_failures, bin_warnings = _process_parallel(
             bin_files,
             "bin",
             "Processing .bin files",
@@ -297,7 +299,7 @@ def run_addon_extraction(exec_paths, progress_factory=None):
 
     if gma_files:
         logger.info("Extracting .gma files using %d cores...", workers)
-        gma_processed, gma_failures = _process_parallel(
+        gma_processed, gma_failures, gma_warnings = _process_parallel(
             gma_files,
             "gma",
             "Processing .gma files",
@@ -326,6 +328,7 @@ def run_addon_extraction(exec_paths, progress_factory=None):
         "gma_processed": gma_processed,
         "renamed": renamed_count,
         "moved": moved_count,
+        "warnings": bin_warnings + gma_warnings,
         "failures": bin_failures + gma_failures,
     }
 

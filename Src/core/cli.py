@@ -1,11 +1,10 @@
 import logging
 import sys
+from importlib.metadata import PackageNotFoundError, version
 
 import ui
 from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
-from PyInstaller import __version__ as pyinstaller_version
-from rarfile import __version__ as rarfile_version
 from utils import app_version, build_date, get_system_info
 
 logger = logging.getLogger("workshop.cli")
@@ -19,16 +18,22 @@ MENU_ITEMS = (
 )
 
 
+def _dependency_version(name):
+    try:
+        return version(name)
+    except PackageNotFoundError:
+        return "bundled"
+
+
 def _build_info():
     return {
         "Program": f"Workshop Decompressor {app_version}",
         "Build Date": build_date,
         "Operating System": get_system_info(),
         "Dependencies": (
-            f"PyInstaller {pyinstaller_version}, "
-            f"RarFile {rarfile_version}, "
-            f"Rich 15.0.0, "
-            "7-Zip 26.02"
+            f"PyInstaller {_dependency_version('pyinstaller')}, "
+            f"Rich {_dependency_version('rich')}, "
+            "7-Zip (bundled)"
         ),
     }
 
@@ -69,10 +74,10 @@ def main():
                 handle_choice(choice)
             except SystemExit:
                 raise
-            except Exception:
+            except Exception as exc:
+                logger.error("Something failed unexpectedly: %s", exc)
                 logger.error(
-                    "Something failed unexpectedly. "
-                    "Check that files are accessible and required tools are available."
+                    "Check that the folder is writable and that files are not open or in use."
                 )
                 ui.pause()
 

@@ -1,8 +1,14 @@
+import logging
+import os
 import platform
+import stat
 import sys
 from pathlib import Path
+from subprocess import DEVNULL, run
 
 import ui
+
+logger = logging.getLogger("workshop.executables")
 
 
 def _get_base_dir() -> Path:
@@ -16,6 +22,35 @@ def _executables_for(system):
         "7z": "7z.exe" if system == "Windows" else "7z",
         "fastgmad": "fastgmad.exe" if system == "Windows" else "fastgmad",
     }
+
+
+def prepare_executables(exec_paths):
+    system = platform.system()
+    if system not in ("Linux", "Darwin"):
+        return
+
+    for name, executable_path in exec_paths.items():
+        try:
+            path = Path(executable_path)
+            os.chmod(path, path.stat().st_mode | stat.S_IEXEC)
+        except OSError as exc:
+            logger.warning(
+                "Could not mark %s as executable. If it fails to run, check permissions. Reason: %s",
+                name, exc
+            )
+
+        if system == "Darwin":
+            try:
+                run(
+                    ["xattr", "-d", "com.apple.quarantine", str(path)],
+                    stdout=DEVNULL,
+                    stderr=DEVNULL,
+                )
+            except OSError as exc:
+                logger.warning(
+                    "Could not clear the macOS quarantine flag on %s. If macOS refuses to open it, right-click it and choose Open. Reason: %s",
+                    name, exc
+                )
 
 
 def locate_executables():
@@ -59,6 +94,7 @@ def ensure_executable_paths():
             "success",
         )
         ui.render_spacer()
+        prepare_executables(found)
         return found
 
     ui.render_missing_tools_panel(missing)
@@ -67,10 +103,6 @@ def ensure_executable_paths():
 
     manual_paths = ui.prompt_absolute_paths(missing)
     found.update(manual_paths)
+    prepare_executables(found)
 
     return found
-
-
-if __name__ == "__main__":
-    result = ensure_executable_paths()
-    print("\nPaths:", result)

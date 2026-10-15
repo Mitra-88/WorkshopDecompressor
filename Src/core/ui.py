@@ -92,7 +92,7 @@ def set_cli_title(title):
         import ctypes
 
         ctypes.windll.kernel32.SetConsoleTitleW(title)
-    else:
+    elif sys.stdout is not None and sys.stdout.isatty():
         sys.stdout.write(f"\033]0;{title}\007")
         sys.stdout.flush()
 
@@ -127,20 +127,44 @@ def _key_value_table(rows):
     return table
 
 
-def _summary_panel(title, rows, failures):
+def _summary_panel(title, rows, failures, warnings=None):
+    warnings = warnings or []
     table = _key_value_table(rows)
+    border_style = "success"
+    panel_title = title
+
+    if warnings:
+        table.add_row(
+            Text("Warnings", style="table.label"),
+            Text(str(len(warnings)), style="warning"),
+        )
 
     if failures:
+        border_style = "warning"
+        panel_title = "COMPLETED WITH ISSUES"
         table.add_row(
             Text("Failures", style="table.label"),
             Text(str(len(failures)), style="error"),
+        )
+        table.add_row(
+            Text("Details", style="table.label"),
+            Text("See the red log lines above for each failed file.", style="muted"),
+        )
+    elif warnings:
+        border_style = "warning"
+        table.add_row(
+            Text("Details", style="table.label"),
+            Text(
+                "Everything extracted. See the yellow log lines above for what 7-Zip reported.",
+                style="muted",
+            ),
         )
 
     console.print(
         Panel(
             table,
-            title=_panel_title(title, style="success"),
-            border_style="success",
+            title=_panel_title(panel_title, style=border_style),
+            border_style=border_style,
             expand=False,
         )
     )
@@ -208,7 +232,7 @@ def render_help(items=None):
     help_text.append("Processes .gma and .bin files. Outputs to 'Extracted-Addons'.\n")
     help_text.append("[2] Extract Archives: ", style="menu.label")
     help_text.append(
-        "Unpacks .zip, .rar, .7z, and .tar files. Originals are moved to 'Leftover'.\n\n"
+        "Unpacks .zip, .rar, .7z, .tar, and .tar.gz/.xz/.bz2 files. Originals are moved to 'Leftover'.\n\n"
     )
 
     help_text.append("💡 Tips\n", style="info")
@@ -252,12 +276,9 @@ def confirm_continue(
     text = Text()
     text.append(title, style="warning")
     text.append("\n")
-    text.append("────────────────────────\n", style="muted")
 
     for line in lines:
         text.append(line + "\n")
-
-    text.append("────────────────────────", style="muted")
 
     console.print(Panel(text, border_style="warning", expand=False))
 
@@ -437,7 +458,12 @@ def render_addon_summary(summary):
         ("Moved", summary.get("moved", 0)),
     ]
 
-    _summary_panel("PROCESS COMPLETE", rows, summary.get("failures", []))
+    _summary_panel(
+        "PROCESS COMPLETE",
+        rows,
+        summary.get("failures", []),
+        summary.get("warnings", []),
+    )
 
 
 def render_archive_summary(summary):
@@ -458,4 +484,9 @@ def render_archive_summary(summary):
         ("Directories cleaned", summary.get("directories_cleaned", 0)),
     ]
 
-    _summary_panel("COMPLETE", rows, summary.get("failures", []))
+    _summary_panel(
+        "COMPLETE",
+        rows,
+        summary.get("failures", []),
+        summary.get("warnings", []),
+    )

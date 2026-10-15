@@ -1,8 +1,9 @@
 import platform
 import threading
 from datetime import datetime
-from os import rmdir, scandir
+from os import cpu_count, rmdir, scandir
 from pathlib import Path
+from subprocess import DEVNULL, PIPE, run
 from uuid import uuid4
 
 excluded_directories = frozenset({"Bin", "Leftover", "_internal", "Extracted-Addons"})
@@ -12,6 +13,55 @@ build_date = datetime.now().strftime("%Y-%m-%d (%A, %B %d)")
 
 _unique_name_lock = threading.Lock()
 _reserved_paths = set()
+
+
+def extraction_workers(max_workers, cores=None):
+    available = cores if cores is not None else (cpu_count() or 2)
+    return min(max_workers, max(1, available - 2), max(1, available * 3 // 4))
+
+
+def _sevenzip_pass(seven_zip_path, archive_path, output_dir):
+    result = run(
+        [str(seven_zip_path), "x", str(archive_path), f"-o{output_dir}", "-y"],
+        stdout=DEVNULL,
+        stderr=PIPE,
+        text=True,
+        errors="replace",
+    )
+    message = result.stderr.strip() or f"exited with code {result.returncode}"
+    return result.returncode, message
+
+
+def _single_inner_tar(output_dir):
+    entries = list(output_dir.iterdir())
+    if len(entries) == 1 and entries[0].is_file() and entries[0].name.lower().endswith(".tar"):
+        return entries[0]
+    return None
+
+
+def run_sevenzip_extraction(seven_zip_path, archive_path, output_dir):
+    output_dir = Path(output_dir)
+    returncode, message = _sevenzip_pass(seven_zip_path, archive_path, output_dir)
+    extracted = any(output_dir.iterdir())
+
+    if extracted:
+        inner_tar = _single_inner_tar(output_dir)
+        if inner_tar is not None:
+            inner_code, inner_message = _sevenzip_pass(
+                seven_zip_path, inner_tar, output_dir
+            )
+            if any(entry != inner_tar for entry in output_dir.iterdir()):
+                inner_tar.unlink()
+                extracted = True
+                returncode, message = inner_code, inner_message
+            elif inner_code >= 2:
+                extracted = False
+                returncode, message = inner_code, inner_message
+
+    # ponytail: content presence is the truth signal because 7-Zip exits with
+    # code 2 on legacy .bin addons (trailing bytes after the lzma payload) even
+    # though extraction succeeds; upgrade path: run `7z t` for full crc checks.
+    return extracted, returncode, message
 
 
 def format_time(seconds):
@@ -29,18 +79,21 @@ def format_time(seconds):
     return " ".join(parts)
 
 
-def normalize_architecture(arch):
+def normalize_architecture(arch: str) -> str:
     mapping = {
         "x86_64": "64-Bit",
         "amd64": "AMD64",
         "arm64": "ARM64",
         "aarch64": "ARM64",
-        "64bit": "64-Bit",
     }
     return mapping.get(arch.lower(), arch)
 
 
-def get_windows_feature_update():
+def join_parts(*parts: str | None) -> str:
+    return " ".join(part for part in parts if part)
+
+
+def get_windows_feature_update() -> str | None:
     if platform.system() != "Windows":
         return None
 
@@ -51,36 +104,43 @@ def get_windows_feature_update():
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key_path) as key:
             display_version, _ = winreg.QueryValueEx(key, "DisplayVersion")
             return display_version
-    except Exception:
+    except OSError:
         return None
 
 
-def get_system_info():
+def get_system_info() -> str:
     system = platform.system()
     arch = normalize_architecture(platform.machine())
+
     if system == "Windows":
-        edition = platform.win32_edition()
-        release = platform.release()
-        version = platform.version()
-        feature_update = get_windows_feature_update()
-        feature_part = f"{feature_update} " if feature_update else ""
-        return f"{system} {release} {feature_part}{edition} (Build {version}) {arch}".strip()
-    elif system == "Linux":
+        build = platform.version().split(".")[-1]
+        return join_parts(
+            system,
+            platform.release(),
+            get_windows_feature_update(),
+            platform.win32_edition(),
+            f"(Build {build})",
+            arch,
+        )
+
+    if system == "Linux":
         try:
             os_release = platform.freedesktop_os_release()
             if "PRETTY_NAME" in os_release:
-                return f"{os_release['PRETTY_NAME']} {arch}"
+                return join_parts(os_release["PRETTY_NAME"], arch)
             name = os_release.get("NAME", "Linux")
-            version = os_release.get("VERSION", "")
-            if name or version:
-                return f"{name} {version} {arch}".strip()
-        except OSError:
-            system_name = platform.system()
-            release = platform.release()
-            return f"{system_name} {release} {arch}"
-    elif system == "Darwin":
+            version = os_release.get("VERSION") or os_release.get("VERSION_ID") or ""
+            return join_parts(name, version, arch)
+        except (AttributeError, OSError):
+            return join_parts(system, platform.release(), arch)
+
+    if system == "Darwin":
         mac_version, *_ = platform.mac_ver()
-        return f"macOS {mac_version or platform.release()} {arch}"
+        if mac_version:
+            return join_parts("macOS", mac_version, arch)
+        return join_parts("macOS", f"(Darwin {platform.release()})", arch)
+
+    return join_parts(system, platform.release(), arch)
 
 
 def unique_name(file_path):

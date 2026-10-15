@@ -39,7 +39,7 @@ body:
     validations:
       required: true
   - type: input
-    id: vae-version
+    id: wd-version
     attributes:
       label: What version of WorkshopDecompressor are you using?
       placeholder: ex. WorkshopDecompressor 2.8.0 (abcdefg)
