@@ -1,0 +1,202 @@
+name: Build
+
+permissions:
+  contents: read
+  actions: write
+
+on:
+  workflow_dispatch:
+
+  push:
+    branches:
+      - master
+    paths:
+      - '.github/workflows/**'
+      - 'Src/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - 'version.txt'
+
+jobs:
+  build-windows:
+    name: Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        shell: pwsh
+        run: |
+          irm https://astral.sh/uv/install.ps1 | iex
+          echo "$env:USERPROFILE\.local\bin" >> $env:GITHUB_PATH
+
+      - name: Install Python
+        run: uv python install 3.15
+
+      - name: Restore uv cache
+        uses: actions/cache@v4
+        with:
+          path: ~\AppData\Local\uv\cache
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Put the virtual environment on PATH
+        shell: pwsh
+        run: echo "$env:GITHUB_WORKSPACE\.venv\Scripts" >> $env:GITHUB_PATH
+
+      - name: Run tests
+        run: python -m unittest discover -s Src/Test -p "test_sevenzip_detection.py" -v
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Write build commit
+        shell: bash
+        run: git rev-parse --short HEAD > Src/build_commit.txt
+
+      - name: Build with PyInstaller
+        run: pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/build_commit.txt;."  "Src/Core/cli.py"
+
+      - name: Move Bin Folder and Remove Gmad And 7-zip from Linux/macOS
+        run: |
+          Copy-Item -Path "Src/Bin" -Destination "dist" -Recurse -Force
+          Remove-Item -Path 'dist/Bin/Linux/fastgmad' -Force
+          Remove-Item -Path 'dist/Bin/Darwin/fastgmad' -Force
+          Remove-Item -Path 'dist/Bin/Linux/7z' -Force
+          Remove-Item -Path 'dist/Bin/Darwin/7z' -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: WorkshopDecompressor-${{ steps.sha.outputs.short_sha }}-Windows-x64
+          path: dist
+          compression-level: 9
+
+  build-linux:
+    name: Linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install Python
+        run: uv python install 3.15
+
+      - name: Restore uv cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Put the virtual environment on PATH
+        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Run tests
+        run: python -m unittest discover -s Src/Test -p "test_sevenzip_detection.py" -v
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Write build commit
+        run: git rev-parse --short HEAD > Src/build_commit.txt
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:."  "Src/core/cli.py"
+
+      - name: Move Bin Folder and Remove Gmad And 7-zip from Windows/macOS
+        run: |
+          cp -r Src/Bin dist/
+          rm -f dist/Bin/Windows/fastgmad.exe
+          rm -f dist/Bin/Windows/7z.exe
+          rm -f dist/Bin/Darwin/fastgmad
+          rm -f dist/Bin/Darwin/7z
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: WorkshopDecompressor-${{ steps.sha.outputs.short_sha }}-Linux-x64
+          path: dist
+          compression-level: 9
+
+  build-macos:
+    name: macOS
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          mkdir -p ~/Library/Caches/uv
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Install Python
+        run: uv python install 3.15
+
+      - name: Restore uv cache
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/uv
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Put the virtual environment on PATH
+        run: echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+
+      - name: Run tests
+        run: python -m unittest discover -s Src/Test -p "test_sevenzip_detection.py" -v
+
+      - name: Get short SHA
+        id: sha
+        run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        shell: bash
+
+      - name: Write build commit
+        run: git rev-parse --short HEAD > Src/build_commit.txt
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:."  "Src/core/cli.py"
+
+      - name: Move Bin Folder and Remove Gmad And 7-zip from Windows/Linux
+        run: |
+          cp -r Src/Bin dist/
+          rm -f dist/Bin/Windows/fastgmad.exe
+          rm -f dist/Bin/Windows/7z.exe
+          rm -f dist/Bin/Linux/fastgmad
+          rm -f dist/Bin/Linux/7z
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: WorkshopDecompressor-${{ steps.sha.outputs.short_sha }}-macOS-ARM64
+          path: dist
+          compression-level: 9
