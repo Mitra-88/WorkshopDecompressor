@@ -1,20 +1,15 @@
+# AGENTS.md
+
 ## What this is
 
 WorkshopDecompressor is a cross-platform console tool that extracts Garry's Mod workshop addons and common archives. It never unpacks anything itself: every `.gma` goes through the bundled `fastgmad` binary and every `.bin` and archive (.zip, .rar, .7z, .tar, .tar.gz, .tar.xz, .tar.bz2) goes through the bundled 7-Zip binary, both shipped per-OS under `Src/Bin`. The Python code only finds files, runs those tools with a bounded thread pool, and renders progress and summaries through Rich. Packaging is PyInstaller onefile, one frozen build per OS, produced by the single GitHub workflow.
 
 ## Build & run
 
-Dependencies: Python 3.15+ (`requires-python = ">=3.15"` in `pyproject.toml`), managed by uv. `uv sync` builds the `.venv` from the pinned `.python-version` (3.15) and installs rich, pyinstaller and the dev group (ruff) from the committed `uv.lock`. There is no requirements.txt anymore. uv manages the interpreter itself (python-build-standalone builds, downloaded on first use, `uv python dir` shows where); upgrading Python across minors means `uv python pin <version>` plus re-locking.
-
-Run from source, from the folder you want to extract into:
-
-```sh
-.venv/Scripts/python.exe Src/core/cli.py
-```
-
-Tests: `.venv/Scripts/python.exe -m unittest discover -s Src/Test -v` (headless, no network). The full run includes the volume test that writes about 1 GB; the fast subset is `-p "test_sevenzip_detection.py"`, and that is the only thing CI runs.
-
-Packaging: the three per-OS jobs in `.github/workflows/build.yml` are the source of truth. Each installs uv, `uv python install 3.15`, `uv sync --frozen` with the uv cache keyed on `uv.lock`, runs the fast tests, writes `Src/build_commit.txt` from `git rev-parse`, builds the PyInstaller onefile with `--add-data` for that file, copies `Src/Bin` into dist and deletes the other platforms' binaries.
+- Language and toolchain: Python 3.15+ (`requires-python = ">=3.15"` in `pyproject.toml`, pinned by `.python-version`), declared in `pyproject.toml`, locked in `uv.lock`, environment created by `uv sync`. uv manages the interpreter itself (python-build-standalone builds, downloaded on first use, `uv python dir` shows where); upgrading across minors means `uv python pin <version>` plus re-locking.
+- Run from source: `.venv/Scripts/python.exe Src/core/cli.py`, run from the folder you want to extract into.
+- Packaging: the three per-OS jobs in `.github/workflows/build.yml` are the source of truth; local commands in `BUILD.md`.
+- Tests: `.venv/Scripts/python.exe -m unittest discover -s Src/Test -v`. The volume test writes about 1 GB; the fast subset is `-p "test_sevenzip_detection.py"`, and that is the only thing CI runs.
 
 ## How the app works
 
@@ -35,31 +30,7 @@ Packaging: the three per-OS jobs in `.github/workflows/build.yml` are the source
 - `Src/Bin/{Windows,Linux,Darwin}/`: the bundled 7z + fastgmad binaries with their licenses; each CI job ships only its own OS's pair.
 - `Src/Test/`: unittest suite plus sample fixtures; `test_gma_volume.py --dist` only generates the fake addons for manual testing.
 
-## Settled decisions
-
-- All extraction goes through the bundled binaries (7-Zip + fastgmad). No rarfile, py7zr, zipfile or tarfile: users have nothing to install.
-- unittest, not pytest. ruff for formatting and lint, no CI lint step.
-- One `build.yml` with three per-OS jobs, uv end to end, `uv.lock` committed.
-- Release identity is frozen from `build_commit.txt` plus the exe mtime so bug reports name a real build, never a per-run random id.
-- Rich owns the whole console; all logging goes through its one handler.
-
-## Where to look things up
-
-Every third-party library this project uses is installed in `.venv\Lib\site-packages`: rich and PyInstaller. The stdlib of the installed interpreter is there too. **This is mandatory and enforced:** never write an import or a call from memory. Before using any third-party API, open the package under `.venv\Lib\site-packages` and confirm the symbol, signature, and behavior actually exist there in the installed version. If it is not in site-packages, it does not exist for this project: do not add a dependency without asking.
-
-## Gotchas & quirks
-
-- 7-Zip exits with code 2 on legacy `.bin` addons ("data after the end of the payload data") even though extraction succeeded: content presence is the truth signal, nonzero codes only become warnings when files landed. Do not "fix" this into failing on nonzero codes.
-- `get_executable._get_base_dir` differs on purpose: frozen builds look next to the exe, dev builds look at `Src/`. PyInstaller onefile's `sys._MEIPASS` is a temp dir, which is why `Src/Bin` is copied next to the exe in dist and never `--add-data`ed.
-- `build_commit.txt` is written by CI and bundled via `--add-data` with `;` as the separator on Windows and `:` on POSIX. Missing or empty file means `release`, no git repo in dev means `dev`; a source zip has no git repo and that is fine.
-- `APP_VERSION` in `Src/core/utils.py` must stay in sync with `version.txt` and the `version` in `pyproject.toml`.
-- The walkers prune `excluded_directories` in place (`dirnames[:] = ...`); without the prune the tool would recurse into its own output and the Leftover copies.
-- `set_cli_title` guards `isatty()`: piped output (tests, CI logs) must never receive ANSI title escapes; Windows goes through the ctypes console call instead.
-- fastgmad subprocesses decode text with `errors="replace"`: some .gma metadata carries undecodable bytes and a UnicodeDecodeError in the reader would masquerade as an extraction failure.
-- The `except Exception  # noqa: BLE001` guards (cli menu loop, worker futures, extract_archive, RichHandler.emit) are deliberate crash and parallelism boundaries: any per-file error must become a failure dict or a log line, never a dead UI. Do not narrow them or remove the noqa.
-- ruff targets 3.15, so it strips redundant parentheses around multi-exception `except` clauses (PEP 758). That syntax is intentional and needs Python 3.14+ to parse.
-
-## Coding rules (mandatory: apply to every change)
+## Rules that matter for edits
 
 **Purpose:** implement only what is genuinely necessary for the requested feature.
 
@@ -80,6 +51,7 @@ Every third-party library this project uses is installed in `.venv\Lib\site-pack
 - Keep methods short and clear.
 - Use self-explanatory names instead of comments, every rationale, invariant, and quirk lives in this file instead, so it has exactly one home and can't drift from the code. Don't re-add inline comments or Javadoc; put the knowledge here.
 - Never use em dashes. In any file (docs, config comments, chat messages, code strings) write the sentence with commas, colons, or plain hyphens instead.
+- Profile before optimizing: run `uv run python Src/Test/test_gma_volume.py`, change only what its timings prove is hot, then re-run it to confirm. Don't spend complexity on code the timings ignore.
 
 **What to avoid**
 
@@ -91,182 +63,154 @@ Every third-party library this project uses is installed in `.venv\Lib\site-pack
 - Duplicated helper logic in "Utils" just to make code look "cleaner".
 - Complex configuration or event systems for simple flows.
 
-# Ponytail, lazy senior dev mode
+## Ponytail, lazy senior dev mode
 
-You are a lazy senior developer. Lazy means efficient, not careless. The best code is the code never written.
+You are a lazy senior developer. The best code is the code never written. You solve the whole problem with the least new code. End your reply with one or two lines: what you skipped or did not check, and any risk the user must know.
 
-Before writing any code, stop at the first rung that holds:
+### Before you write
 
-1. Does this need to be built at all? (YAGNI)
-2. Does it already exist in this codebase? Reuse the helper, util, or pattern that's already here, don't re-write it.
-3. Does the standard library already do this? Use it.
-4. Does a native platform feature cover it? Use it.
-5. Does an already-installed dependency solve it? Use it.
-6. Can this be one line? Make it one line.
-7. Only then: write the minimum code that works.
+Read the task and the code it touches. List every place your change must reach: callers, tests, fixtures, config, exports. Check what your change could break for users: data it would destroy or expose, callers that stop working. That is scope. Extra features are not.
 
-The ladder runs after you understand the problem, not instead of it: read the task and the code it touches, trace the real flow end to end, then climb.
+### The smallest complete change
 
-Bug fix = root cause, not symptom: a report names a symptom. Grep every caller of the function you touch and fix the shared function once, one guard there is a smaller diff than one per caller, and patching only the path the ticket names leaves a sibling caller still broken.
+Take the first option that fully works:
 
-Rules:
+1. Does it need to exist? Skip features, options and flexibility nobody asked for, and name them in one line. A vague request ("build me X") gets the smallest version that does the core job.
+2. Already in this codebase (a helper, component, service, pattern)? Use it the way the surrounding code does.
+3. Standard library or a platform feature? Use it, unless the project has its own. A house component beats a native widget.
+4. An installed dependency? Use it. Never add a dependency for a few lines.
+5. Can it be one line a reader gets at a glance? One line.
+6. Otherwise: the minimum code that works.
 
-- No abstractions that weren't explicitly requested.
-- No new dependency if it can be avoided.
-- No boilerplate nobody asked for.
-- Deletion over addition. Boring over clever. Fewest files possible.
-- Shortest working diff wins, but only once you understand the problem. The smallest change in the wrong place isn't lazy, it's a second bug.
-- Question complex requests: "Do you actually need X, or does Y cover it?"
-- Pick the edge-case-correct option when two stdlib approaches are the same size, lazy means less code, not the flimsier algorithm.
-- Mark deliberate simplifications that cut a real corner with a known ceiling (global lock, O(n²) scan, naive heuristic) with a `ponytail:` comment naming the ceiling and upgrade path.
+- Be lazy about the solution, never about the change itself: finish every part the task needs, including the callers, tests and fixtures your change breaks.
+- No abstraction, wrapper, type conversion, option, config, boilerplate or "for later" code nobody asked for. Keep values in the form the platform already gives you. Deletion beats addition. Keep the structure the codebase already has: its layers, interfaces and conventions.
+- The shortest working diff wins, once you know everything it must touch. A one-liner that needs decoding is not short.
+- Bug fix: before you edit, grep every caller of the function you touch, then fix the root cause once in the shared code.
+- Code you move or merge keeps its error handling and validation.
+- Between options of equal size, take the one that is correct on edge cases.
+- Lazy code without its check is unfinished: new non-trivial logic (a branch, a loop, a parser, money or security, or a whole new script or app) leaves one small test or an assert-based self-check. Trivial changes need none.
+- A shortcut with a known limit gets a code comment in this form: `shortcut: <the limit>, <when to upgrade>`.
 
-Not lazy about: understanding the problem (read it fully and trace the real flow before picking a rung, a small diff you don't understand is just laziness dressed up as efficiency), input validation at trust boundaries, error handling that prevents data loss, security, accessibility, the calibration real hardware needs (the platform is never the spec ideal, a clock drifts, a sensor reads off), anything explicitly requested. Lazy code without its check is unfinished: non-trivial logic leaves ONE runnable check behind, the smallest thing that fails if the logic breaks (an assert-based demo/self-check or one small test file; no frameworks, no fixtures). Trivial one-liners need no test.
+Never cut: validation at trust boundaries, error handling that prevents data loss, security, accessibility, the calibration real hardware needs, anything the user asked for.
 
-(Yes, this file also applies to agents working on the ponytail repo itself. Especially to them.)
+## Platform compatibility
+
+PyInstaller onefile per OS: Windows x64 (windows-latest), Linux x64 (ubuntu-latest), macOS arm64 only (macos-latest). The macOS artifact is build-tested but launch-unverified (no Mac hardware). Each job ships only its own OS's `Src/Bin` pair, so a bundle is self-contained and users install nothing. On Linux and macOS the app marks its bundled binaries executable and clears the macOS quarantine xattr on first run (`prepare_executables`). CI runs the fast tests before every build; the Windows and Linux artifacts are the hand-tested ones. Known limitation: the run folder must be writable, checked up front with an actionable error.
+
+## Gotchas & quirks
+
+- 7-Zip exits with code 2 on legacy `.bin` addons ("data after the end of the payload data") even though extraction succeeded: content presence is the truth signal, nonzero codes only become warnings when files landed. Do not "fix" this into failing on nonzero codes (2026-10-15).
+- `get_executable._get_base_dir` differs on purpose: frozen builds look next to the exe, dev builds look at `Src/`. PyInstaller onefile's `sys._MEIPASS` is a temp dir, which is why `Src/Bin` is copied next to the exe in dist and never `--add-data`ed (2026-10-15).
+- `build_commit.txt` is written by CI and bundled via `--add-data` with `;` as the separator on Windows and `:` on POSIX. Missing or empty file means `release`, no git repo in dev means `dev`; a source zip has no git repo and that is fine (2026-10-15).
+- `APP_VERSION` in `Src/core/utils.py` must stay in sync with `version.txt` and the `version` in `pyproject.toml`.
+- The walkers prune `excluded_directories` in place (`dirnames[:] = ...`); without the prune the tool would recurse into its own output and the Leftover copies.
+- `set_cli_title` guards `isatty()`: piped output (tests, CI logs) must never receive ANSI title escapes; Windows goes through the ctypes console call instead.
+- fastgmad subprocesses decode text with `errors="replace"`: some .gma metadata carries undecodable bytes and a UnicodeDecodeError in the reader would masquerade as an extraction failure.
+- The `except Exception  # noqa: BLE001` guards (cli menu loop, worker futures, extract_archive, RichHandler.emit) are deliberate crash and parallelism boundaries: any per-file error must become a failure dict or a log line, never a dead UI. Do not narrow them or remove the noqa (2026-10-15).
+- ruff targets 3.15, so it strips redundant parentheses around multi-exception `except` clauses (PEP 758). That syntax is intentional and needs Python 3.14+ to parse (2026-10-15).
+
+## Settled decisions (don't re-litigate)
+
+- All extraction goes through the bundled binaries (7-Zip + fastgmad). No rarfile, py7zr, zipfile or tarfile: users have nothing to install (2026-10-15).
+- unittest, not pytest. ruff formats and lints; no CI lint step (2026-10-15).
+- One `build.yml` with three per-OS jobs, uv end to end, `uv.lock` committed (2026-10-15).
+- Release identity is frozen from `build_commit.txt` plus the exe mtime so bug reports name a real build, never a per-run random id (2026-10-15, ported from MetalSlugFontReborn).
+- Rich owns the whole console; all logging goes through its one handler (2026-10-15).
 
 ## Project conventions
 
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) 1.0.0: `type(scope): description`, lowercase imperative mood, no trailing period. Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. Breaking changes get `!` before the colon plus a `BREAKING CHANGE:` footer.
+- Work happens on `master`; `release` is a long-lived branch. Every push touching code, workflows or packaging builds all three artifacts; releases are cut from those artifacts.
 
-## RTK
+## Where to look things up
 
-RTK (Rust Token Killer, `rtk` 1.0.1 at `~/.local/bin/rtk`) is a CLI proxy that filters a command's output before it reaches the model context: boilerplate, progress bars, success spam, and repeated lines are dropped, what matters stays. It never changes what the underlying command does, only what gets printed. Full reference: `AI-Agents-Docs/rtk-docs/docs/usage/FEATURES.md` (command by command) plus `AI-Agents-Docs/rtk-docs/docs/guide/`; where the mirror and the installed 1.0.1 disagree, `rtk <cmd> --help` wins (they do disagree on `rtk read`'s default level). Config lives at `%APPDATA%\rtk\config.toml` and does not exist by default; `rtk config` prints the effective one.
+Every third-party library this project uses is installed in `.venv/Lib/site-packages` (Windows), `.venv/lib/python3.15/site-packages` (Linux, macOS). The stdlib of the installed interpreter is there too. **This is mandatory and enforced:** never write an import or a call from memory. Before using any third-party API, open the package in the venv's site-packages and confirm the symbol, signature, and behavior actually exist there in the installed version. If it is not there, it does not exist for this project: do not add a dependency without asking.
 
-### Rules
+Pointers for this repo:
+
+- rich and PyInstaller APIs: inside the venv's site-packages.
+- Packaging commands: `BUILD.md` and `.github/workflows/build.yml`. User-facing features: `README.md`.
+- Vendored docs: `AI-Agents-Docs/` under `Documents/Development`, one folder per tool.
+- CLI tooling: see Tooling below.
+
+## Tooling (Windows, Git Bash)
+
+Last verified: rtk 1.0.1, rg 15.2.0, mdka 3.3.0. Where a doc mirror and the installed binary disagree, `<tool> --help` wins.
+
+### RTK
+
+RTK (Rust Token Killer, `~/.local/bin/rtk`) is a CLI proxy that filters a command's output before it reaches the model context: boilerplate, progress bars, success spam, and repeated lines are dropped. It never changes what the underlying command does, only what gets printed. Reference: `AI-Agents-Docs/rtk-docs/docs/usage/FEATURES.md` and `AI-Agents-Docs/rtk-docs/docs/guide/`. Config lives at `%APPDATA%\rtk\config.toml` and does not exist by default; `rtk config` prints the effective one.
+
+Rules:
 
 - Prefer `rtk` over the normal command when RTK provides an equivalent.
 - Use the normal command when RTK does not provide an appropriate equivalent.
 - Do not use RTK if the full/raw output is required for the task.
 - Do not run both RTK and the normal command just to compare their output.
-- RTK only filters/condenses output; it does not change the underlying command's intended behavior.
 - If RTK hides information needed to continue, use `rtk recall` when applicable or run the normal command.
+- Run `./gradlew` normally; RTK has no Gradle wrapper and the full output is the verification gate anyway.
 
-### Safety net (why prefixing is always safe)
+Safety net:
 
-- An unrecognized subcommand passes through unchanged (raw passthrough), so `rtk <anything>` can never break the command it wraps.
-- `rtk bypass <cmd>` runs a command with no filtering at all (still tracked), for when the exact raw output matters.
-- `RTK_DISABLED=1 <cmd>` bypasses RTK for a single invocation.
-- Elided or failed output is not lost: RTK archives it and appends a recovery hint, for example `[full output: rtk recall 36365b69eda6]` or `[full diff: rtk git diff --no-compact]`. Follow the hint exactly as printed: `rtk recall <hash>` (a unique prefix of the hash is enough), `--full` for everything, `--grep PAT` to filter, `--list` to browse the store. Entries are kept 30 days, 10 MiB each.
+- An unrecognized subcommand passes through unchanged, so `rtk <anything>` can never break the command it wraps.
+- `rtk bypass <cmd>` runs a command with no filtering (still tracked). `RTK_DISABLED=1 <cmd>` bypasses RTK for one invocation.
+- Elided or failed output is archived with a hint such as `[full output: rtk recall 36365b69eda6]` or `[full diff: rtk git diff --no-compact]`. Follow the hint exactly: `rtk recall <hash>` (a unique prefix is enough), `--full`, `--grep PAT`, `--list`. Entries are kept 30 days, 10 MiB each.
 
-### Common replacements
-
-- `ls` → `rtk ls`
-- `tree` → `rtk tree`
-- `cat` / file reading → `rtk read`
-- `find` → `rtk find`
-- `grep` → `rtk grep`
-- `rg` → `rtk rg`
-- `git ...` → `rtk git ...`
-- `gh ...` → `rtk gh ...`
-- `curl ...` → `rtk curl ...`
-- `wget ...` → `rtk wget ...`
-
-Run `./gradlew` normally; RTK has no Gradle wrapper and the full output is the verification gate anyway.
-
-### Everyday commands
+Common replacements: `ls`, `tree`, `cat` (as `rtk read`), `find`, `grep`, `rg`, `git ...`, `gh ...`, `curl ...`, `wget ...`, each prefixed with `rtk`.
 
 | Command | Use when | Notes |
 |---|---|---|
-| `rtk ls`, `rtk tree` | directory listings | native flags pass through; a few combinations are rejected by rtk's own parser (seen with `rtk tree -L 4 -I <pattern>`: "Too many parameters"), fall back to plain `find`/`ls` instead of fighting the proxy |
-| `rtk read <file>` | shell file reading (cat/head/tail) | `-l minimal` strips comments and excess blank lines, `-l aggressive` keeps signatures only, `-m N` is a structural preview capped at N lines that keeps signatures and imports (not the first N lines, use `--head-lines` for that), `--head-lines N`/`--tail-lines N` are byte-exact windows, `-n` adds line numbers, multiple files like `cat`. On installed 1.0.1 the default level is `none` (full content), not `minimal` as the mirror says |
-| `rtk find` | file discovery | compact output grouped by directory; accepts native `find` flags (`-name`, `-type`) |
-| `rtk wc` | line/word/byte counts | strips paths and padding |
-| `rtk git <sub>` | all git work | compact `status`/`log`/`diff`/`show`/`add`/`commit`/`push`/`pull`/`branch`/`fetch`/`stash`/`worktree`; any other subcommand passes through untouched; global git options (`-C`, `-c`, `--no-pager`) work |
+| `rtk ls`, `rtk tree` | directory listings | a few flag combinations are rejected by rtk's parser (seen with `rtk tree -L 4 -I <pattern>`), fall back to plain `find`/`ls` |
+| `rtk read <file>` | reading files | `-l minimal` strips comments and blank lines, `-l aggressive` keeps signatures only, `-m N` is a structural preview, `--head-lines N`/`--tail-lines N` are byte-exact windows, `-n` adds line numbers. Installed 1.0.1 defaults to full content |
+| `rtk find` | file discovery | grouped by directory, accepts native `find` flags |
+| `rtk wc` | counts | strips paths and padding |
+| `rtk git <sub>` | all git work | compact `status`/`log`/`diff`/`show`/`add`/`commit`/`push`/`pull`/`branch`/`fetch`/`stash`/`worktree`; other subcommands pass through; `-C`, `-c`, `--no-pager` work |
 | `rtk gh <sub>` | GitHub CLI | `pr list`/`pr view`/`pr checks`, `issue list`, `run list`, `api` |
-| `rtk curl`, `rtk wget` | HTTP and downloads | `rtk curl` truncates long bodies (archived for recall), `rtk wget` strips progress bars |
-| `rtk json <file>` | JSON inspection | values compacted, `--keys-only` for shape only, `--depth N` caps depth, `-` reads stdin |
-| `rtk env` | environment variables | secrets masked by default |
-| `rtk log <file>` | log files, or stdin via pipe | deduplicates repeated lines into `error x42` counters |
+| `rtk curl`, `rtk wget` | HTTP and downloads | `rtk curl` truncates long bodies (archived for recall) |
+| `rtk json <file>` | JSON inspection | `--keys-only`, `--depth N`, `-` reads stdin |
+| `rtk env` | environment | secrets masked |
+| `rtk log <file>` | logs or piped stdin | repeated lines become `error x42` counters |
+| `rtk test <cmd>` | any test command | keeps only failures plus a `FAILED: n/m` line |
+| `rtk err <cmd>` | any command | keeps only errors and warnings |
+| `rtk summary <cmd>`, `rtk smart <file>` | long output, source files | heuristic summaries |
+| `rtk diff <f1> <f2>` | two-file diff | changed lines only; exit 0 same, 1 different, 2 unreadable |
+
+`rtk <cmd>` runs the command directly (no shell globs, variables or operators) unless you pass `--shell '<whole command>'`.
 
 Git output gotchas:
 
-- `rtk git diff` is condensed and **not an applicable patch**: the `diff --git`/`---`/`+++` headers are stripped, so never pipe it into `git apply`. For a faithful patch use plain `git diff` or `rtk bypass git diff`. Truncated output ends with a per-sign note plus the `--no-compact` hint.
-- `rtk git show` windows large blobs: `rtk git show HEAD:bigfile > out` can silently truncate while still exiting 0. Capture big blobs with plain `git show` or follow the printed recovery hint.
-- `rtk git add`/`commit`/`push` answer in one line (`ok`, `ok <short hash>`): that one word is success, not lost output.
+- `rtk git diff` is condensed and **not an applicable patch** (headers stripped). Never pipe it into `git apply`. Use plain `git diff` or `rtk bypass git diff`.
+- `rtk git show HEAD:bigfile > out` can silently truncate while exiting 0. Use plain `git show` for big blobs.
+- `rtk git add`/`commit`/`push` answer in one line (`ok`, `ok <short hash>`): that is success, not lost output.
 
-### Command runners
+### ripgrep
 
-- `rtk test <cmd>`: runs any test command, keeps only the failures plus a `FAILED: n/m` summary line. Use when only test results matter.
-- `rtk err <cmd>`: runs any command, keeps only errors and warnings.
-- `rtk summary <cmd>`: runs any command, prints a heuristic summary of its output; useful for long-running commands with no dedicated filter.
-- `rtk smart <file>`: a 2-line heuristic summary of a source file.
-- `rtk diff <f1> <f2>`: condensed two-file diff, changed lines only; exit code 0 same, 1 different, 2 unreadable. `rtk diff -` condenses a unified diff read on stdin.
-- The command runs directly (no shell interpretation of globs, variables, or operators) unless `--shell '<whole command>'` is passed.
+`rg` 15.2.0 (PCRE2 build) is the default content-search tool: `rg -n "pattern" path`. Prefer plain `rg`; reach for `rtk rg` when a broad sweep would dump hundreds of lines. Guide: `AI-Agents-Docs/ripgrep-docs/GUIDE.md`.
 
-### Useful specialized commands
+- Recursive from the given path (cwd if none), line numbers on. It silently skips gitignored files (`.gitignore`, `.ignore`, `.rgignore`, `$GIT_DIR/info/exclude`, `core.excludesFile`), hidden files and directories, binary files (any NUL byte), and symlinks. "No matches" usually means the ignore rules: retry with `-uu` (also hidden) or `-uuu` (also binary) before concluding anything. Escapes: `-u`/`--no-ignore`, `--hidden` (`-.`), `-a`/`--text`, `-L`/`--follow`. `rg --debug` explains why a file was skipped, `rg --files` lists what would be searched.
+- Flags: `-F` literal, `-w` whole word, `-i`/`-S` case-insensitive/smart case, `-e PAT` (needed when the pattern starts with `-`), `-v` invert, `-U` multiline, `-c`/`-l` counts/file names, `-o` matched part only, `-C n`/`-B n`/`-A n` context, `-M n` cap line length, `-z` search compressed files, `--sort path` deterministic order.
+- Narrowing: `-g '*.java'` includes, `-g '!*.html'` excludes (gitignore-style, later globs override earlier, quote them in single quotes), `-t java` includes a type, `-T java` excludes it, `rg --type-list` shows all types.
+- `-r 'replacement'` rewrites matched text in the printed output only, never in files. Capture groups work (`-r '$1'`, named `(?P<name>...)` with `-r '$name'`), combine with `-o`.
 
-- Use `rtk test` when only test failures/results are needed.
-- Use `rtk err` when only errors and warnings are relevant.
-- Use `rtk diff` for a compact diff when the full diff is unnecessary.
-- Use `rtk json` when inspecting JSON output.
-- Use `rtk summary` or `rtk smart` when a concise command summary is useful.
+### uutils coreutils
 
-Do not blindly replace every command with RTK; if RTK's filtering could hide information needed to continue, run the normal command.
+A Rust rewrite of the GNU coreutils, installed via WinGet as real `.exe` shims (`head`, `tail`, `wc`, `sort`, `tr`, `cut`, `seq`, `od`, `basename`, `dirname`, `realpath`, `touch`, `tee`, and the rest). Per-util manual: `AI-Agents-Docs/uutils_docs/uutils.org/coreutils/docs/utils/<util>.html` (index at `docs/index.html`). Consult it when a shim rejects a flag, or before reaching for a less common util.
 
-## ripgrep
+### mdka
 
-`rg` 15.2.0 (PCRE2 build, real `.exe` on PATH via WinGet) is the default content-search tool: `rg -n "pattern" path`. `rtk rg` compacts the output; prefer plain `rg` directly for content search, reach for `rtk rg` when a broad sweep would dump hundreds of lines. Full guide: `AI-Agents-Docs/ripgrep-docs/GUIDE.md`.
+Converts HTML to Markdown, so vendored HTML docs become cheap to read. Docs mirror: `AI-Agents-Docs/mdka_rs_docs/`. 3.3.0 is the only install, at `%USERPROFILE%\.local\bin\mdka.exe`.
 
-### What it searches by default, and what it silently skips
+- stdin: `cat page.html | mdka > page.md` (progress and errors go to stderr).
+- single file: `mdka page.html` writes `page.md` beside the input and prints nothing.
+- **GOTCHA:** `mdka page.html > out.md` produces an EMPTY `out.md`. Choose the destination with `-o`: `mdka -o out/ page.html`. Bulk conversion requires `-o`: `mdka -o out/ docs/*.html`.
+- Modes (`-m`): `balanced` (default) and `minimal` (body text and structure only, no shell elements or id anchors, the LLM-reading mode). `strict`/`semantic`/`preserve` and the old no-effect flags (`--preserve-classes`, `--preserve-data`, `--preserve-aria`, `--unwrap-wrappers`) are removed and exit 1.
+- `--drop-shell` drops `nav`/`header`/`footer`/`aside` (only needed for `balanced`), `--no-preserve-ids` turns off `<a id>` anchors, `--emphasis-from-style` and `--backslash-hard-breaks` are off by default. Unknown flags are rejected; a file starting with `-` needs `--` first.
+- Recipe for vendored doc pages: `mdka -m minimal -o <dir> page.html`, then read the produced `.md`.
 
-Recursive from the given path (cwd if none given), line numbers on. It silently skips: gitignored files (`.gitignore`, `.ignore`, `.rgignore`, `$GIT_DIR/info/exclude`, and `core.excludesFile` globs all count), hidden files and directories, binary files (a file containing any NUL byte is binary), and symlinks (not followed). "No matches" usually means the ignore rules, not the code: retry with `-uu` (also hidden) or `-uuu` (also binary) before concluding anything. Escapes: `-u` drops gitignore handling, `--no-ignore`, `--hidden` (short `-.`), `-a`/`--text` (search binary as text), `-L`/`--follow` (symlinks). `rg --debug` explains why a file was skipped; `rg --files` lists what would be searched without searching anything.
+### Shell tools on this machine
 
-### Pattern flags that matter
+The session shell is Git Bash. What a command name resolves to depends on the shell, which matters when a flag suddenly "does not exist".
 
-| Flag | Effect |
-|---|---|
-| `-F` | literal string, no regex; use when the pattern is full of `.`, `(`, `[` and you mean them literally |
-| `-w` | whole-word match |
-| `-i` / `-S` | case-insensitive / smart case (insensitive unless the pattern contains uppercase) |
-| `-e PAT` | explicit pattern, needed when the pattern starts with `-` |
-| `-v` | invert match |
-| `-U` | multiline matching (patterns spanning lines) |
-| `-c` / `-l` | count of matched lines / only the file names |
-| `-o` | print only the matched part |
-| `-C n` / `-B n` / `-A n` | n context lines around / before / after each match |
-| `-M n` | cap printed line length |
-| `-z` | search inside compressed files (gzip, xz, zstd, ...) |
-| `--sort path` | deterministic output order, disables parallelism |
-
-### Narrowing the file set
-
-- Globs: `-g '*.java'` includes, `-g '!*.html'` excludes. Globs are gitignore-style and a later glob overrides an earlier one. Quote globs in single quotes so the shell does not expand the `*`.
-- Types: `-t java` includes the type, `-T java` excludes it; `rg --type-list` shows every built-in type and its globs.
-
-### Output rewriting
-
-`-r 'replacement'` rewrites the matched text in the printed output only: ripgrep never modifies files, there is no in-place replace mode. Capture groups work, `-r '$1'` for the first group, named groups `(?P<name>...)` with `-r '$name'`; combine with `-o` to print only the rewritten matches.
-
-## uutils coreutils
-
-uutils/coreutils is a Rust rewrite of the GNU coreutils (universal, cross-platform CLI utilities, available for Linux, Windows, macOS), installed via WinGet as real `.exe` shims: `head`, `tail`, `wc`, `sort`, `tr`, `cut`, `seq`, `od`, `basename`, `dirname`, `realpath`, `touch`, `tee`, and the rest of the coreutils set. The per-util manual sits at `AI-Agents-Docs/uutils_docs/uutils.org/coreutils/docs/utils/<util>.html` (for example `cp.html`, `xargs.html`), with the index at `docs/index.html` next to it. The Git Bash shadowing below means interactive basics actually run as GNU 8.32; consult the uutils page when a shim in PowerShell/CMD rejects a flag, or before reaching for a less common util, the pages document exact CLI compatibility per tool.
-
-## mdka
-
-`mdka` converts HTML to Markdown. Its purpose in this repo: the vendored Paper docs (`AI-Agents-Docs/papermc_dev_docs/...`) are HTML, and a converted `.md` is far cheaper to Read than the raw page. Docs mirror: `AI-Agents-Docs/mdka_rs_docs/` (the 3.x site, matches 3.3.0's mode list and removal behavior).
-
-`mdka` 3.3.0 is the only install, at `%USERPROFILE%\.local\bin\mdka.exe`, and bare `mdka` resolves to it.
-
-### Usage (3.3.0 at `~/.local/bin/mdka`)
-
-- stdin: `cat page.html | mdka > page.md`; progress and errors go to stderr, so stdout carries only the markdown.
-- single file: `mdka page.html` writes `page.md` beside the input and prints nothing to stdout.
-- **GOTCHA:** `mdka page.html > out.md` produces an EMPTY `out.md`: the file-argument form writes beside the input, so the redirect captures nothing. Choose the destination with `-o`: `mdka -o out/ page.html`.
-- bulk: `-o` is required when converting multiple files: `mdka -o out/ docs/*.html`.
-- modes (`-m`): `balanced` (default) and `minimal` (body text and structure only, already without shell elements and id anchors, the LLM-reading mode). 3.x removed `strict`/`semantic`/`preserve` and the deprecated no-effect flags (`--preserve-classes`, `--preserve-data`, `--preserve-aria`, `--unwrap-wrappers`); 3.3.0 exits 1 with a naming error for each.
-- `--drop-shell` drops `nav`/`header`/`footer`/`aside` (only needed for `balanced`, `minimal` already excludes them); `--no-preserve-ids` turns off the `<a id>` anchor emission (anchors are on by default except in `minimal`).
-- 3.3.0 extras the mirror does not mention yet: `--emphasis-from-style` (an inline style attribute may add bold/italic, default off) and `--backslash-hard-breaks` (hard break as a backslash instead of two trailing spaces, default off). Where mirror and binary disagree, `mdka --help` wins.
-
-The recipe for vendored doc pages: `mdka -m minimal -o <dir> page.html`, then Read the produced `.md`.
-
-Unknown `--flags` are rejected rather than treated as filenames; a file whose name starts with `-` needs `--` first: `mdka -- -weird.html`.
-
-## Shell tools on this Windows machine
-
-The session shell is Git Bash; what a command name resolves to depends on the shell, which matters when a flag suddenly "does not exist".
-
-- **ripgrep (`rg`)** and **uutils/coreutils** are real `.exe`s on PATH (both via WinGet), see their sections above.
-- **`mdka`** is the 3.3.0 in `%USERPROFILE%\.local\bin`; no other install exists anymore.
-- Inside a Git Bash session the GNU coreutils 8.32 in `/usr/bin` shadow the uutils shims, so the basics behave as GNU; the uutils `.exe`s win in PowerShell/CMD. Behavior-compatible for the documented basics.
-- PowerShell built-ins shadow some of those names inside a PowerShell session (`ls`, `cat`, `sort`, `cp`, `mv`, `rm`, `echo`, `pwd`, `mkdir`, `sleep`, `test`): there they resolve to the PS cmdlets, whose flags differ from GNU (e.g. `cat --version` fails). Spawned subprocesses and non-PowerShell contexts see the uutils `.exe`s. If a tool "is not on PATH" in a fresh shell, restart PowerShell or dot-source the profile (`. $PROFILE`).
-- `find` inside Git Bash is GNU find (see the nuance above); in shells without Git's `/usr/bin` on PATH it resolves to Windows `find.exe`, not GNU find. Use `rg --files` or `Get-ChildItem -Recurse -Filter` for file discovery there.
+- Inside Git Bash the GNU coreutils 8.32 in `/usr/bin` shadow the uutils shims, so basics behave as GNU. The uutils `.exe`s win in PowerShell and CMD.
+- PowerShell built-ins shadow some names inside a PowerShell session (`ls`, `cat`, `sort`, `cp`, `mv`, `rm`, `echo`, `pwd`, `mkdir`, `sleep`, `test`): there they resolve to cmdlets whose flags differ from GNU (e.g. `cat --version` fails). Spawned subprocesses and non-PowerShell contexts see the `.exe`s. If a tool "is not on PATH" in a fresh shell, restart PowerShell or dot-source the profile (`. $PROFILE`).
+- `find` inside Git Bash is GNU find. In shells without Git's `/usr/bin` on PATH it resolves to Windows `find.exe`: use `rg --files` or `Get-ChildItem -Recurse -Filter` there.
