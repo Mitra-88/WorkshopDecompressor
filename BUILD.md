@@ -3,9 +3,6 @@
 - [Platforms](#platforms)
 - [Getting the Source Code](#getting-the-source-code)
 - [Dependencies](#dependencies)
-  - [Windows](#dependencies)
-  - [Linux](#linux-dependencies)
-  - [macOS](#dependencies)
 - [Compiling](#compiling)
   - [Windows](#windows-details)
   - [Linux](#linux-and-macos)
@@ -26,68 +23,68 @@
 
 # Dependencies
 
-You need the following to compile Workshop Decompressor:
+To compile Workshop Decompressor you will need the following:
 
-- [Python](https://www.python.org/) 3.12+ (latest version is preferred)
-- [PyInstaller](https://www.pyinstaller.org/) 6.22.3+
+- [uv](https://docs.astral.sh/uv/) to manage the Python interpreter and the Python dependencies. Install it with:
+```sh
+# macOS and Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+```sh
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
-## Linux Dependencies
+The remaining requirements are installed by `uv sync` from `pyproject.toml` and `uv.lock`, so you do not need to install them by hand:
 
-For Ubuntu/Debian:
-```sh
-sudo apt install -y python3 python3-pip python3-venv
-```
-For Fedora:
-```sh
-sudo dnf install -y python3 python3-pip python3-virtualenv
-```
-For Arch:
-```sh
-sudo pacman -Syu --noconfirm python-pip python-virtualenv
-```
-For OpenSUSE:
-```sh
-sudo zypper install -y python3 python3-pip python3-virtualenv
-```
+- [Python](https://www.python.org/) 3.15 or later
+- [PyInstaller](https://www.pyinstaller.org/) 6.22.3 or later
+- [Rich](https://rich.readthedocs.io/en/latest/) 15.0.0 or later
 
 # Compiling
 
 ## Windows
 
-In Command Prompt:
+In PowerShell:
 ```sh
 cd WorkshopDecompressor
-py -m venv .venv
-.venv\Scripts\activate.bat
-pip install -r requirements.txt
-pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt"  "Src/Core/cli.py"
+uv python install 3.15
+uv sync --frozen
+git rev-parse --short HEAD > Src\build_commit.txt
+```
+```sh
+uv run pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src\build_commit.txt;."  "Src/Core/cli.py"
 Copy-Item -Path "Src/Bin" -Destination "dist" -Recurse -Force
 ```
+
+Without the `git rev-parse` line (for example from a source zip with no git repo) the build still works, the version string just shows `(release)` or `(dev)` instead of the commit.
 
 ## Linux and macOS
 
 In Terminal:
 ```sh
 cd WorkshopDecompressor
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pyinstaller --noconfirm --onefile --console --name "WorkshopDecompressor" --strip --clean --optimize "2" "Src/core/cli.py"
+uv python install 3.15
+uv sync --frozen
+git rev-parse --short HEAD > Src/build_commit.txt
+```
+```sh
+uv run pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:."  "Src/core/cli.py"
 cp -r Src/Bin dist/
 ```
 
 # Running the Tests
 
-The tests need nothing special. Python plus the files already in the repo
+The tests need nothing special. uv plus the files already in the repo
 (the tools in `Src/Bin` and the samples in `Src/Test`) is all it takes.
 
-From the repo folder, with the venv active:
+From the repo folder, after `uv sync`:
 
 ```sh
-python -m unittest discover -s Src/Test -v
+uv run python -m unittest discover -s Src/Test -v
 ```
 
-Or on Windows, without activating anything:
+Or on Windows, driving the venv directly:
 
 ```sh
 .venv\Scripts\python.exe -m unittest discover -s Src\Test -v
@@ -120,13 +117,13 @@ If you only want those fake files and skip the test part, run this and they
 end up in `dist\volume`:
 
 ```sh
-python Src/Test/test_gma_volume.py --dist
+uv run python Src/Test/test_gma_volume.py --dist
 ```
 
 On Linux / macOS:
 
 ```sh
-python3 Src/Test/test_gma_volume.py --dist
+uv run python3 Src/Test/test_gma_volume.py --dist
 ```
 
 Handy if you want to try the program on them yourself.
