@@ -119,7 +119,7 @@ class GmaVolumeTests(unittest.TestCase):
             return
 
         exec_paths = {
-            "7z": str(BIN_DIR / f"7z{EXE_SUFFIX}"),
+            "7z": str(BIN_DIR / f"7zz{EXE_SUFFIX}"),
             "fastgmad": str(BIN_DIR / f"fastgmad{EXE_SUFFIX}"),
         }
         summary = extract_addons.run_addon_extraction(exec_paths)
