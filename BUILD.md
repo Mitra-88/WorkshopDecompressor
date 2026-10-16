@@ -53,7 +53,7 @@ uv sync --frozen
 git rev-parse --short HEAD > Src\build_commit.txt
 ```
 ```sh
-uv run pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src\build_commit.txt;." --add-data "Src\Bin;Bin"  "Src/Core/cli.py"
+uv run pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src\build_commit.txt;." --add-data "Src\Bin\Windows;Bin\Windows"  "Src/Core/cli.py"
 ```
 
 Without the `git rev-parse` line (for example from a source zip with no git repo) the build still works, the version string just shows `(release)` or `(dev)` instead of the commit.
@@ -68,8 +68,10 @@ uv sync --frozen
 git rev-parse --short HEAD > Src/build_commit.txt
 ```
 ```sh
-uv run pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:." --add-data "Src/Bin:Bin"  "Src/core/cli.py"
+uv run pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:." --add-data "Src/Bin/Linux:Bin/Linux"  "Src/core/cli.py"
 ```
+
+On macOS use `Src/Bin/Darwin:Bin/Darwin` as the last `--add-data` instead.
 
 # Running the Tests
 
