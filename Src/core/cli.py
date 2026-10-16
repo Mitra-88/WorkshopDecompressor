@@ -45,7 +45,7 @@ def handle_choice(choice):
         case "2":
             extract_archives()
         case "3":
-            ui.render_help(MENU_ITEMS)
+            ui.render_help()
         case "4":
             ui.render_build_info(_build_info())
         case "5":

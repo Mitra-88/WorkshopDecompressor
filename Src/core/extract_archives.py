@@ -11,6 +11,7 @@ from utils import (
     excluded_directories,
     extraction_workers,
     format_time,
+    plural,
     remove_empty_directories,
     run_sevenzip_extraction,
     unique_name,
@@ -92,7 +93,7 @@ def extract_archive(archive_path, leftover_dir, seven_zip_path):
             raise RuntimeError(f"7-Zip failed: {message}")
 
         warning = None
-        if returncode >= 2:
+        if returncode:
             warning = f"7-Zip reported: {message}"
             logger.warning("Extracted %s, but %s", archive_path.name, message)
 
@@ -179,12 +180,11 @@ def _process_parallel_archives(
 def run_archive_extraction(progress_factory=None, seven_zip_path=None):
     progress_factory = progress_factory or _null_stage
 
-    logger.info("Scanning archives...")
+    logger.info("[1/3] Scanning for archives...")
     archives = find_archives()
-    logger.info("Found %d archives", len(archives))
 
     if not archives:
-        logger.info("No archives found in current directory.")
+        logger.info("Found 0 archives, nothing to do.")
         return {
             "elapsed_seconds": 0.0,
             "elapsed": format_time(0.0),
@@ -194,6 +194,8 @@ def run_archive_extraction(progress_factory=None, seven_zip_path=None):
             "warnings": [],
             "failures": [],
         }
+
+    logger.info("Found %s", plural(len(archives), "archive"))
 
     leftover_dir = Path("Leftover")
     try:
@@ -206,7 +208,11 @@ def run_archive_extraction(progress_factory=None, seven_zip_path=None):
 
     start_time = time()
 
-    logger.info("Extracting %d archives using %d cores...", len(archives), workers)
+    logger.info(
+        "[2/3] Extracting archives (%s, %d workers)...",
+        plural(len(archives), "file"),
+        workers,
+    )
     processed, failures, warnings = _process_parallel_archives(
         archives,
         "archive",
@@ -216,9 +222,16 @@ def run_archive_extraction(progress_factory=None, seven_zip_path=None):
         seven_zip_path,
         progress_factory,
     )
+    logger.info("Extracted %d of %s", processed, plural(len(archives), "archive"))
 
-    logger.info("Cleaning up...")
+    logger.info("[3/3] Cleaning up...")
     deleted_dirs_count = remove_empty_directories(".")
+
+    if deleted_dirs_count:
+        logger.info(
+            "Removed %s",
+            plural(deleted_dirs_count, "empty directory", "empty directories"),
+        )
 
     elapsed_time = time() - start_time
 
@@ -240,17 +253,14 @@ def main():
     global _warning_confirmed
 
     if not _warning_confirmed:
-        confirmed = ui.confirm_continue(
-            "⚠ WARNING ⚠",
-            ARCHIVE_WARNING_LINES,
-            cancel_message="Cancelled.",
-            invalid_message="Invalid input.",
-        )
+        confirmed = ui.confirm_continue("WARNING", ARCHIVE_WARNING_LINES)
 
         if not confirmed:
             return
 
         _warning_confirmed = True
+    else:
+        logger.info("File-in-use warning already acknowledged for this session.")
 
     exec_paths = ensure_executable_paths()
     summary = run_archive_extraction(ui.stage_progress, exec_paths["7z"])

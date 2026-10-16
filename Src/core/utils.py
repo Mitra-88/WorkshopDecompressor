@@ -116,6 +116,13 @@ def format_time(seconds):
     return " ".join(parts)
 
 
+def plural(count, word, plural_word=None):
+    if count == 1:
+        return f"{count} {word}"
+
+    return f"{count} {plural_word or word + 's'}"
+
+
 def normalize_architecture(arch: str) -> str:
     mapping = {
         "x86_64": "64-Bit",

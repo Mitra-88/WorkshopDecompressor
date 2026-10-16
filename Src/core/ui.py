@@ -10,10 +10,14 @@ from rich.logging import RichHandler
 from rich.panel import Panel
 from rich.progress import (
     BarColumn,
+    DownloadColumn,
+    MofNCompleteColumn,
     Progress,
     SpinnerColumn,
+    TaskProgressColumn,
     TextColumn,
     TimeElapsedColumn,
+    TransferSpeedColumn,
 )
 from rich.prompt import Prompt
 from rich.table import Table
@@ -132,35 +136,54 @@ def _key_value_table(rows):
     return table
 
 
-def _summary_panel(title, rows, failures, warnings=None):
-    warnings = warnings or []
-    table = _key_value_table(rows)
+_MAX_LISTED_FAILURES = 5
+
+
+def _summary_panel(title, rows, failures, warnings):
     border_style = "success"
     panel_title = title
 
-    if warnings:
-        table.add_row(
-            Text("Warnings", style="table.label"),
-            Text(str(len(warnings)), style="warning"),
-        )
-
     if failures:
-        border_style = "warning"
-        panel_title = "COMPLETED WITH ISSUES"
-        table.add_row(
-            Text("Failures", style="table.label"),
-            Text(str(len(failures)), style="error"),
-        )
-        table.add_row(
-            Text("Details", style="table.label"),
-            Text("See the red log lines above for each failed file.", style="muted"),
-        )
+        border_style = "error"
+        panel_title = "COMPLETED WITH FAILURES"
     elif warnings:
         border_style = "warning"
+        panel_title = "COMPLETED WITH WARNINGS"
+
+    table = _key_value_table(rows)
+    table.add_row(
+        Text("Warnings", style="table.label"),
+        Text(str(len(warnings)), style="warning" if warnings else None),
+    )
+    table.add_row(
+        Text("Failures", style="table.label"),
+        Text(str(len(failures)), style="error" if failures else None),
+    )
+
+    if failures:
+        names = [failure["file"].name for failure in failures[:_MAX_LISTED_FAILURES]]
+        more = len(failures) - len(names)
+        listed = ", ".join(names)
+
+        if more > 0:
+            listed += f" (+{more} more)"
+
+        table.add_row(
+            Text("Failed files", style="table.label"),
+            Text(listed, style="error"),
+        )
         table.add_row(
             Text("Details", style="table.label"),
             Text(
-                "Everything extracted. See the yellow log lines above for what 7-Zip reported.",
+                "See the red log lines above for the reason each file failed.",
+                style="muted",
+            ),
+        )
+    elif warnings:
+        table.add_row(
+            Text("Details", style="table.label"),
+            Text(
+                "Everything extracted. See the yellow log lines above for details.",
                 style="muted",
             ),
         )
@@ -179,6 +202,7 @@ def render_banner(app_version):
     text = Text()
     text.append("Workshop Decompressor ", style="app.title")
     text.append(app_version, style="muted")
+    text.append("\nGarry's Mod addon and archive extractor", style="muted")
 
     console.print(Panel.fit(text, border_style="app.border"))
 
@@ -221,30 +245,41 @@ def render_menu(items):
     _render_item_panel(items, "MAIN MENU")
 
 
-def render_help(items=None):
+def render_help():
     help_text = Text()
 
-    help_text.append("📂 Setup\n", style="info")
+    help_text.append("Getting started\n", style="info")
     help_text.append(
         "Place this executable in your addon folder (e.g., steamapps/workshop/content/4000).\n"
     )
     help_text.append(
-        "It automatically scans the current directory and all subdirectories.\n\n"
+        "It scans the current directory and all subdirectories automatically.\n\n"
     )
 
-    help_text.append("🔧 Extraction Modes\n", style="info")
+    help_text.append("Menu options\n", style="info")
     help_text.append("[1] Extract Addons: ", style="menu.label")
-    help_text.append("Processes .gma and .bin files. Outputs to 'Extracted-Addons'.\n")
+    help_text.append(
+        "processes .bin and .gma files into 'Extracted-Addons'; originals move to 'Leftover'.\n"
+    )
     help_text.append("[2] Extract Archives: ", style="menu.label")
     help_text.append(
-        "Unpacks .zip, .rar, .7z, .tar, and .tar.gz/.xz/.bz2 files. Originals are moved to 'Leftover'.\n\n"
+        "unpacks .zip, .rar, .7z, .tar and .tar.gz/.xz/.bz2 files into a folder named after each archive; originals move to 'Leftover'.\n"
     )
+    help_text.append("[3] Help: ", style="menu.label")
+    help_text.append("shows this guide.\n")
+    help_text.append("[4] Build Info: ", style="menu.label")
+    help_text.append(
+        "shows version, build date and system details, useful for bug reports.\n"
+    )
+    help_text.append("[5] Exit: ", style="menu.label")
+    help_text.append("closes the program.\n\n")
 
-    help_text.append("💡 Tips\n", style="info")
-    help_text.append("• Close tools using these files before extracting.\n")
+    help_text.append("Tips\n", style="info")
+    help_text.append("• Close any programs using these files before extracting.\n")
     help_text.append(
         "• If 7-Zip or fastgmad are missing, the tool will prompt for their paths.\n"
     )
+    help_text.append("• Drag and drop a file into this window to enter its path.\n")
     help_text.append(
         "• Empty directories are cleaned up automatically after extraction."
     )
@@ -272,12 +307,7 @@ def pause():
     input()
 
 
-def confirm_continue(
-    title,
-    lines,
-    cancel_message="Operation cancelled.",
-    invalid_message="Invalid input. Please enter 'y' or 'n'.",
-):
+def confirm_continue(title, lines, cancel_message="Operation cancelled."):
     text = Text()
     text.append(title, style="warning")
     text.append("\n")
@@ -287,17 +317,18 @@ def confirm_continue(
 
     console.print(Panel(text, border_style="warning", expand=False))
 
-    while True:
-        response = Prompt.ask(Text("Continue? (y/n)", style="prompt")).lower().strip()
+    response = Prompt.ask(
+        Text("Continue? (y/n)", style="prompt"),
+        choices=["y", "n"],
+        show_choices=False,
+        case_sensitive=False,
+    )
 
-        if response in ("y", "yes"):
-            return True
+    if response == "y":
+        return True
 
-        if response in ("n", "no"):
-            render_message(cancel_message, "muted")
-            return False
-
-        render_message(invalid_message, "warning")
+    render_message(cancel_message, "muted")
+    return False
 
 
 def render_tool_status(rows):
@@ -337,7 +368,7 @@ def render_missing_tools_panel(missing):
     console.print(
         Panel(
             text,
-            title=_panel_title("Tools Missing", style="error"),
+            title=_panel_title("TOOLS MISSING", style="error"),
             border_style="error",
             expand=False,
         )
@@ -433,13 +464,31 @@ def stage_progress(stage, description, total):
     with Progress(
         SpinnerColumn(),
         TextColumn("{task.description}", style=style),
-        BarColumn(),
+        BarColumn(bar_width=None, complete_style=style, finished_style=style),
+        MofNCompleteColumn(),
+        TaskProgressColumn(),
         TimeElapsedColumn(),
         console=console,
         transient=True,
     ) as progress:
         task_id = progress.add_task(description, total=total)
         yield lambda: progress.advance(task_id)
+
+
+@contextmanager
+def download_progress(description, total_bytes):
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("{task.description}", style="info"),
+        BarColumn(bar_width=None),
+        DownloadColumn(),
+        TransferSpeedColumn(),
+        TimeElapsedColumn(),
+        console=console,
+        transient=True,
+    ) as progress:
+        task_id = progress.add_task(description, total=total_bytes)
+        yield lambda step: progress.advance(task_id, step)
 
 
 def render_addon_summary(summary):
@@ -459,6 +508,7 @@ def render_addon_summary(summary):
         (".bin files", summary.get("bin_processed", 0)),
         (".gma files", summary.get("gma_processed", 0)),
         ("Renamed", summary.get("renamed", 0)),
+        ("Dirs cleaned", summary.get("directories_cleaned", 0)),
         ("Output", "Extracted-Addons"),
         ("Moved", summary.get("moved", 0)),
     ]
@@ -486,6 +536,7 @@ def render_archive_summary(summary):
     rows = [
         ("Time", summary.get("elapsed", "")),
         ("Processed", summary.get("processed", 0)),
+        ("Output", "One folder per archive"),
         ("Directories cleaned", summary.get("directories_cleaned", 0)),
     ]
 

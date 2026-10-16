@@ -12,6 +12,7 @@ from utils import (
     excluded_directories,
     extraction_workers,
     format_time,
+    plural,
     remove_empty_directories,
     run_sevenzip_extraction,
     unique_name,
@@ -122,6 +123,13 @@ def extract_bin_file(bin_file, seven_zip_path):
                 f"7-Zip reported: {message}. This is normal for legacy .bin addons, "
                 "the files were extracted successfully."
             )
+        elif returncode == 1:
+            warning = (
+                f"7-Zip reported: {message}. The files were extracted, "
+                "but some items may be incomplete."
+            )
+
+        if warning:
             logger.warning("Extracted %s, but %s", bin_file.name, warning)
 
         return _outcome(bin_file, True, returncode, warning=warning)
@@ -264,7 +272,7 @@ def run_addon_extraction(exec_paths, progress_factory=None):
 
     start_time = time()
 
-    logger.info("[1/5] Setting up environment...")
+    logger.info("[1/6] Preparing output folder...")
     try:
         Path("Extracted-Addons").mkdir(exist_ok=True)
     except OSError as exc:
@@ -273,60 +281,78 @@ def run_addon_extraction(exec_paths, progress_factory=None):
             "Move this program to a folder you can write to and run it again."
         ) from exc
 
-    logger.info("[2/5] Scanning for .bin files...")
+    logger.info("[2/6] Scanning for .bin files...")
     bin_files = find_files_with_extension(".bin")
-    logger.info("Found %d .bin files", len(bin_files))
 
     bin_processed = 0
     bin_failures = []
     bin_warnings = []
 
     if bin_files:
-        logger.info("[3/5] Extracting .bin files using %d cores...", workers)
+        logger.info("Found %s", plural(len(bin_files), ".bin file"))
+        logger.info(
+            "[3/6] Extracting .bin files (%s, %d workers)...",
+            plural(len(bin_files), "file"),
+            workers,
+        )
         bin_processed, bin_failures, bin_warnings = _process_parallel(
             bin_files,
             "bin",
-            "Processing .bin files",
+            "Extracting .bin files",
             extract_bin_file,
             exec_paths["7z"],
             progress_factory,
             "BIN",
         )
+        logger.info(
+            "Extracted %d of %s", bin_processed, plural(len(bin_files), ".bin file")
+        )
     else:
-        logger.info("No .bin files found.")
+        logger.info("Found 0 .bin files, skipping extraction")
 
-    logger.info("[4/5] Fixing missing extensions...")
+    logger.info("[4/6] Fixing missing extensions...")
     renamed_count = add_extension_to_files_without_format()
 
     if renamed_count:
-        logger.info("Fixed %d files", renamed_count)
+        logger.info("Fixed %s", plural(renamed_count, "file"))
 
-    logger.info("[5/5] Scanning .gma files...")
+    logger.info("[5/6] Scanning and extracting .gma files...")
     gma_files = find_files_with_extension(".gma")
-    logger.info("Found %d .gma files", len(gma_files))
 
     gma_processed = 0
     gma_failures = []
+    gma_warnings = []
 
     if gma_files:
-        logger.info("Extracting .gma files using %d cores...", workers)
+        logger.info("Found %s", plural(len(gma_files), ".gma file"))
+        logger.info(
+            "Extracting .gma files (%s, %d workers)...",
+            plural(len(gma_files), "file"),
+            workers,
+        )
         gma_processed, gma_failures, gma_warnings = _process_parallel(
             gma_files,
             "gma",
-            "Processing .gma files",
+            "Extracting .gma files",
             extract_gma_file,
             exec_paths["fastgmad"],
             progress_factory,
             "GMA",
         )
+        logger.info(
+            "Extracted %d of %s", gma_processed, plural(len(gma_files), ".gma file")
+        )
     else:
-        logger.info("No .gma files found.")
+        logger.info("Found 0 .gma files, skipping extraction")
 
-    logger.info("Moving processed files...")
+    logger.info("[6/6] Moving processed files and cleaning up...")
     moved_count = move_files_to_leftover(bin_files + gma_files, Path("Leftover"))
+    cleaned_count = remove_empty_directories(".")
 
-    logger.info("Cleaning empty directories...")
-    remove_empty_directories(".")
+    if cleaned_count:
+        logger.info(
+            "Removed %s", plural(cleaned_count, "empty directory", "empty directories")
+        )
 
     elapsed_time = time() - start_time
 
@@ -339,6 +365,7 @@ def run_addon_extraction(exec_paths, progress_factory=None):
         "gma_processed": gma_processed,
         "renamed": renamed_count,
         "moved": moved_count,
+        "directories_cleaned": cleaned_count,
         "warnings": bin_warnings + gma_warnings,
         "failures": bin_failures + gma_failures,
     }
@@ -351,9 +378,11 @@ def main():
     global _warning_confirmed
 
     if not _warning_confirmed:
-        if not ui.confirm_continue("⚠ WARNING ⚠", ADDON_WARNING_LINES):
+        if not ui.confirm_continue("WARNING", ADDON_WARNING_LINES):
             return
         _warning_confirmed = True
+    else:
+        logger.info("File-in-use warning already acknowledged for this session.")
 
     exec_paths = ensure_executable_paths()
     summary = run_addon_extraction(exec_paths, ui.stage_progress)
