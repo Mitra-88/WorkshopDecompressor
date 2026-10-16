@@ -309,6 +309,50 @@ class ToolRecoveryTests(unittest.TestCase):
 
         self.assertEqual(recovered, {})
 
+    def test_recover_creates_missing_bin_dir(self):
+        archive = self._make_zip({"fastgmad.exe": FAKE_EXE})
+        bin_dir = self.tmp / "deep" / "Bin" / platform.system()
+
+        original_fetch = get_executable._fetch_release_asset
+        original_download = get_executable._download_verified
+        original_smoke = get_executable._runs_on_this_cpu
+
+        get_executable._fetch_release_asset = lambda repo, keyword: (
+            "https://example/bundle.zip",
+            "sha256",
+            "0" * 64,
+            100,
+        )
+
+        def fake_download(
+            url, algo, expected_hash, expected_size, temp_path, progress_factory=None
+        ):
+            shutil.copyfile(archive, temp_path)
+            return True
+
+        get_executable._download_verified = fake_download
+        get_executable._runs_on_this_cpu = lambda exe: True
+        try:
+            recovered = get_executable._recover_missing_tools(["fastgmad"], bin_dir)
+        finally:
+            get_executable._fetch_release_asset = original_fetch
+            get_executable._download_verified = original_download
+            get_executable._runs_on_this_cpu = original_smoke
+
+        self.assertEqual(recovered, {"fastgmad": str(bin_dir / "fastgmad.exe")})
+
+    def test_fetch_release_asset_rejects_non_json_response(self):
+        original_open = get_executable._open_url
+        get_executable._open_url = lambda url, timeout: io.BytesIO(
+            b"<html>portal</html>"
+        )
+        try:
+            asset = get_executable._fetch_release_asset("owner/repo", "windows")
+        finally:
+            get_executable._open_url = original_open
+
+        self.assertIsNone(asset)
+
     def test_os_keyword_covers_this_platform(self):
         system = platform.system()
 

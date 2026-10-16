@@ -1,4 +1,5 @@
 import hashlib
+import http.client
 import json
 import logging
 import os
@@ -71,6 +72,13 @@ def _fetch_release_asset(repo, system_keyword):
             with _open_url(url, _API_TIMEOUT) as response:
                 release = json.load(response)
             break
+        except ValueError as exc:
+            logger.warning(
+                "The %s nightly release response was not valid JSON (%s).",
+                repo,
+                exc,
+            )
+            return None
         except urllib.error.HTTPError as exc:
             if exc.code >= 500 and attempt < _DOWNLOAD_RETRIES - 1:
                 time.sleep(_RETRY_DELAY)
@@ -82,7 +90,7 @@ def _fetch_release_asset(repo, system_keyword):
                 repo,
             )
             return None
-        except urllib.error.URLError, TimeoutError, OSError:
+        except urllib.error.URLError, http.client.HTTPException, TimeoutError, OSError:
             if attempt < _DOWNLOAD_RETRIES - 1:
                 time.sleep(_RETRY_DELAY)
                 continue
@@ -150,7 +158,7 @@ def _download_verified(
                 continue
             logger.warning("Could not download the tool bundle (HTTP %s).", exc.code)
             return False
-        except urllib.error.URLError, TimeoutError, OSError:
+        except urllib.error.URLError, http.client.HTTPException, TimeoutError, OSError:
             temp_path.unlink(missing_ok=True)
             if attempt < _DOWNLOAD_RETRIES - 1:
                 time.sleep(_RETRY_DELAY)
@@ -215,7 +223,12 @@ def _extract_tool(archive_path, member_name, dest_path):
         temp_path.unlink(missing_ok=True)
         return False
 
-    os.replace(temp_path, dest_path)
+    try:
+        os.replace(temp_path, dest_path)
+    except OSError:
+        temp_path.unlink(missing_ok=True)
+        return False
+
     return True
 
 
@@ -239,7 +252,18 @@ def _runs_on_this_cpu(exe_path):
 def _recover_missing_tools(missing, bin_dir, progress_factory=None):
     """Download missing tools from their nightly releases. Returns the paths recovered."""
     system = platform.system()
-    system_keyword = _OS_KEYWORDS[system]
+    system_keyword = _OS_KEYWORDS.get(system)
+
+    if system_keyword is None:
+        logger.warning("Unsupported platform %r for tool download.", system)
+        return {}
+
+    try:
+        bin_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        logger.warning("Cannot create %s (%s), skipping tool download.", bin_dir, exc)
+        return {}
+
     filenames = _executables_for(system)
     recovered = {}
 
@@ -284,16 +308,25 @@ def _recover_missing_tools(missing, bin_dir, progress_factory=None):
 
         logger.info("Checking that %s runs on this CPU...", filename)
 
-        if not _runs_on_this_cpu(bin_dir / filename):
+        tool_path = bin_dir / filename
+
+        try:
+            os.chmod(tool_path, tool_path.stat().st_mode | stat.S_IEXEC)
+        except OSError:
+            pass
+
+        logger.info("Checking that %s runs on this CPU...", filename)
+
+        if not _runs_on_this_cpu(tool_path):
             logger.warning(
                 "%s was downloaded but would not run on this CPU and was removed. "
                 "It may need a newer processor (AVX2). Use the manual path option instead.",
                 filename,
             )
-            (bin_dir / filename).unlink(missing_ok=True)
+            tool_path.unlink(missing_ok=True)
             continue
 
-        recovered[name] = str(bin_dir / filename)
+        recovered[name] = str(tool_path)
         logger.info("Installed %s successfully.", filename)
 
     return recovered
