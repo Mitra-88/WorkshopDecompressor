@@ -207,6 +207,16 @@ def render_banner(app_version):
     console.print(Panel.fit(text, border_style="app.border"))
 
 
+def render_update_notice(tag, url):
+    text = Text()
+    text.append("Update available: ", style="info")
+    text.append(tag, style="ok")
+    text.append("  ")
+    text.append(url, style=f"link {url}")
+
+    console.print(text)
+
+
 def render_build_info(info):
     console.print(
         Panel(

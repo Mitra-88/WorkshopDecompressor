@@ -5,6 +5,8 @@ from importlib.metadata import PackageNotFoundError, version
 import ui
 from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
+from update_check import start as start_update_check
+from update_check import take_notice
 from utils import app_version, build_date, get_system_info
 
 logger = logging.getLogger("workshop.cli")
@@ -60,9 +62,15 @@ def main():
     ui.set_cli_title(f"Workshop Decompressor {app_version}")
 
     try:
+        start_update_check()
         ui.render_banner(app_version)
 
         while True:
+            notice = take_notice()
+
+            if notice:
+                ui.render_update_notice(*notice)
+
             ui.render_spacer()
             ui.render_menu(MENU_ITEMS)
 

@@ -88,6 +88,7 @@ Workshop Decompressor is a free, open-source command-line tool for Garry's Mod p
 - **Clean Console UI** - Numbered steps, live progress with file counts, per-file warnings, and a completion summary, powered by Rich.
 - **Cross-Platform** - One native executable per OS, with the extraction tools already inside: no setup, just run it.
 - **Self-Repairing Tools** - If a bundled binary is missing, it can download the right one from the project's nightly releases, verifying the published SHA-256 checksum before anything is unpacked.
+- **Update Notices** - Checks GitHub once per launch (in the background) and points to newer releases with a clickable link. It never downloads anything, and you can turn it off with the `WORKSHOP_DECOMPRESSOR_NO_UPDATE_CHECK` environment variable.
 - **Drop-in GWTool Replacement** - Point it at your addons and it does the rest, no manual steps.
 
 ## Coming from GWTool?

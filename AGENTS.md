@@ -30,7 +30,8 @@ Inherited from the global AGENTS.md, short form: `rtk` wraps every large-output 
 - `Src/core/extract_addons.py`: .bin/.gma discovery, the parallel addon pipeline, Leftover moves, summary dict.
 - `Src/core/extract_archives.py`: archive discovery and extraction, same pipeline shape.
 - `Src/core/get_executable.py`: bundled-tool discovery, chmod+x, xattr quarantine removal, manual-path prompts.
-- `Src/core/ui.py`: every Rich render (banner, menu, progress, tables, prompts) and the logging setup; the only module that talks to the terminal.
+- `Src/core/ui.py`: every Rich render (banner, menu, progress, tables, prompts, update notice) and the logging setup; the only module that talks to the terminal.
+- `Src/core/update_check.py`: one background check per launch against GitHub releases/latest; compares numeric versions, notifies once per new version through `take_notice()` rendered by the menu loop, stores one key in the user config folder, never downloads anything, silent on every failure; opt-out env `WORKSHOP_DECOMPRESSOR_NO_UPDATE_CHECK`, skipped when stdout is not a TTY.
 - `Src/core/utils.py`: version identity, worker math, the 7-Zip runner, unique_name, system info, empty-dir cleanup.
 - `Src/Bin/{Windows,Linux,Darwin}/`: the bundled 7z + fastgmad binaries with their licenses; each CI job ships only its own OS's pair.
 - `Src/Test/`: unittest suite plus sample fixtures; `test_gma_volume.py --dist` only generates the fake addons for manual testing.
