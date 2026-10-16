@@ -201,3 +201,5 @@ pyrightconfig.json
 
 # Streamlit
 .streamlit/secrets.toml
+
+build_commit.txt

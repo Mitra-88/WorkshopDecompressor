@@ -9,15 +9,20 @@ WorkshopDecompressor is a cross-platform console tool that extracts Garry's Mod 
 - Language and toolchain: Python 3.15+ (`requires-python = ">=3.15"` in `pyproject.toml`, pinned by `.python-version`), declared in `pyproject.toml`, locked in `uv.lock`, environment created by `uv sync`. uv manages the interpreter itself (python-build-standalone builds, downloaded on first use, `uv python dir` shows where); upgrading across minors means `uv python pin <version>` plus re-locking.
 - Run from source: `.venv/Scripts/python.exe Src/core/cli.py`, run from the folder you want to extract into.
 - Packaging: the three per-OS jobs in `.github/workflows/build.yml` are the source of truth; local commands in `BUILD.md`.
-- Tests: `.venv/Scripts/python.exe -m unittest discover -s Src/Test -v`. The volume test writes about 1 GB; the fast subset is `-p "test_sevenzip_detection.py"`, and that is the only thing CI runs.
+- Tests: `.venv/Scripts/python.exe -m unittest discover -s Src/Test -v`. Single test: append the node, e.g. `-k test_unique_name_threadsafe`. The volume test writes about 1 GB; the fast subset is `-p "test_sevenzip_detection.py"`, and that is the only thing CI runs.
+- If a command fails, read `pyproject.toml` and `BUILD.md` before inventing flag variants: do not guess.
 
 ## How the app works
 
 `cli.py` shows a Rich menu. Extract Addons (`extract_addons.run_addon_extraction`) walks the current folder recursively, pruning `excluded_directories` (Bin, Leftover, _internal, Extracted-Addons) in place, extracts every `.bin` through 7-Zip and every `.gma` through fastgmad via `_process_parallel` on a `ThreadPoolExecutor` capped by `extraction_workers` (min of the per-mode MAX_WORKERS, cores-2, and 3/4 of cores), renames extension-less files to `.gma`, moves processed sources into `Leftover`, and cleans empty directories. Extract Archives (`extract_archives.run_archive_extraction`) is the same pipeline for archive extensions, each extracted into a folder named after its stem, then moved into `Leftover`.
 
-`utils.run_sevenzip_extraction` is the single 7-Zip runner and the heart of the tool: success means "files appeared in the output dir", because 7-Zip exits with code 2 on legacy `.bin` addons that carry trailing bytes after the lzma payload even though extraction succeeded; returncode >= 2 with extracted content becomes a warning collected into the summary, not a failure. When the output is a single inner `.tar` (the .tar.gz/.xz/.bz2 shapes) a second 7-Zip pass unpacks it and removes the intermediate. Worker exceptions never kill the run, they become failure dicts logged per file.
+`utils.run_sevenzip_extraction` is the single 7-Zip runner and the heart of the tool: success means "files appeared in the output dir", because 7-Zip exits with code 2 on legacy `.bin` addons that carry trailing bytes after the lzma payload even though extraction succeeded; any nonzero returncode with extracted content becomes a warning collected into the summary, not a failure (2 is the legacy .bin case, 1 means some sub-items had problems). When the output is a single inner `.tar` (the .tar.gz/.xz/.bz2 shapes) a second 7-Zip pass unpacks it and removes the intermediate. Worker exceptions never kill the run, they become failure dicts logged per file.
 
-`unique_name` is thread-safe: under a lock it hands out non-existing, reserved candidate paths so parallel extractions cannot collide on `Extracted-Bin` names or Leftover destinations. Frozen builds take the version commit from `build_commit.txt` (bundled into `sys._MEIPASS` via `--add-data`) and the build date from the exe's mtime; dev builds run `git rev-parse` at import and use the run date. `get_executable.locate_executables` finds the bundled binaries next to the exe in frozen builds or under `Src/Bin` in dev, and `prepare_executables` chmods them executable and clears the macOS quarantine xattr before first use.
+`unique_name` is thread-safe: under a lock it hands out non-existing, reserved candidate paths so parallel extractions cannot collide on `Extracted-Bin` names or Leftover destinations. Frozen builds take the version commit from `build_commit.txt` (bundled into `sys._MEIPASS` via `--add-data`) and the build date from the exe's mtime; dev builds run `git rev-parse` at import and use the run date. `get_executable.locate_executables` resolves each tool from the persistent `Bin/<OS>` next to the exe first (dev: `Src/Bin`, where self-repair installs), falling back to the embedded `<sys._MEIPASS>/Bin/<OS>` copy (the 7-Zip binary is named `7zz`), and `prepare_executables` chmods the resolved paths executable and clears the macOS quarantine xattr before first use. When a binary is missing and the user agrees, `get_executable._recover_missing_tools` downloads it from that tool's own `nightly` release (`Mitra-88/7zip`, `Mitra-88/fastgmad`), matching the one OS asset, verifying its published sha256 or sha512 digest and size while streaming, extracting only the expected executable (basename + regular-file match), smoke-testing it with `--help` (catches AVX2-only builds on old CPUs; rollback + manual-path fallback on any failure). Retries cover connection errors and 5xx only; 403/404 give up immediately because 403 usually means the 60 req/h unauthenticated rate limit.
+
+## Token discipline (machine-wide, mandatory)
+
+Inherited from the global AGENTS.md, short form: `rtk` wraps every large-output command (recover hidden parts with `rtk recall <hash>`, unfiltered with `rtk bypass`, details in Tooling below); `headroom_compress` anything 500+ tokens of JSON, logs, or test/build output and keep the hash (`headroom_retrieve` with a `query` instead of re-reading; originals expire in ~1 hour); `jcodemunch` answers relationship questions in indexed projects, `register_edit` after edits. Never compress source code you are about to edit, config needed verbatim, or small snippets. Full rules and fallbacks: `AI-Agents-Docs/AGENTS-template-global.md`.
 
 ## Codebase tour
 
@@ -29,6 +34,13 @@ WorkshopDecompressor is a cross-platform console tool that extracts Garry's Mod 
 - `Src/core/utils.py`: version identity, worker math, the 7-Zip runner, unique_name, system info, empty-dir cleanup.
 - `Src/Bin/{Windows,Linux,Darwin}/`: the bundled 7z + fastgmad binaries with their licenses; each CI job ships only its own OS's pair.
 - `Src/Test/`: unittest suite plus sample fixtures; `test_gma_volume.py --dist` only generates the fake addons for manual testing.
+
+## Don't touch
+
+- `uv.lock`: updated by uv commands only, never hand-edited.
+- `Src/Bin/**`: the shipped 7z + fastgmad binaries and their licenses; replaced only as whole per-OS pairs.
+- `build_commit.txt`: written by CI, bundled at build time; its absence in dev is normal, not a bug.
+- The `except Exception  # noqa: BLE001` guards: deliberate crash and parallelism boundaries (see Gotchas); do not narrow or remove.
 
 ## Rules that matter for edits
 
@@ -95,12 +107,12 @@ Never cut: validation at trust boundaries, error handling that prevents data los
 
 ## Platform compatibility
 
-PyInstaller onefile per OS: Windows x64 (windows-latest), Linux x64 (ubuntu-latest), macOS arm64 only (macos-latest). The macOS artifact is build-tested but launch-unverified (no Mac hardware). Each job ships only its own OS's `Src/Bin` pair, so a bundle is self-contained and users install nothing. On Linux and macOS the app marks its bundled binaries executable and clears the macOS quarantine xattr on first run (`prepare_executables`). CI runs the fast tests before every build; the Windows and Linux artifacts are the hand-tested ones. Known limitation: the run folder must be writable, checked up front with an actionable error.
+PyInstaller onefile per OS: Windows x64 (windows-latest), Linux x64 (ubuntu-latest), macOS arm64 only (macos-latest). The macOS artifact is build-tested but launch-unverified (no Mac hardware). Each build embeds only its own OS's `Src/Bin` pair via `--add-data`, so the artifact is a single self-contained exe and users install nothing. On Linux and macOS the app marks its bundled binaries executable and clears the macOS quarantine xattr on first run (`prepare_executables`). CI runs the fast tests before every build; the Windows and Linux artifacts are the hand-tested ones. Known limitation: the run folder must be writable, checked up front with an actionable error.
 
 ## Gotchas & quirks
 
 - 7-Zip exits with code 2 on legacy `.bin` addons ("data after the end of the payload data") even though extraction succeeded: content presence is the truth signal, nonzero codes only become warnings when files landed. Do not "fix" this into failing on nonzero codes (2026-10-15).
-- `get_executable._get_base_dir` differs on purpose: frozen builds look next to the exe, dev builds look at `Src/`. PyInstaller onefile's `sys._MEIPASS` is a temp dir, which is why `Src/Bin` is copied next to the exe in dist and never `--add-data`ed (2026-10-15).
+- Binary resolution order (2026-10-16, supersedes the old "never --add-data Bin" rule): `locate_executables` looks for each tool in the persistent `Bin/<OS>` next to the exe (dev: `Src/Bin`) first, then in the embedded `<sys._MEIPASS>/Bin/<OS>` copy. The exe embeds `Src/Bin` via `--add-data`; PyInstaller re-expands it to a fresh temp dir every launch and does not preserve file attributes there, so `prepare_executables` re-chmods (and re-clears quarantine) per run. The docs warn "changes to added files are lost when the application ends": that is why self-repair never writes into `_MEIPASS`, it installs beside the exe, which then wins the search order.
 - `build_commit.txt` is written by CI and bundled via `--add-data` with `;` as the separator on Windows and `:` on POSIX. Missing or empty file means `release`, no git repo in dev means `dev`; a source zip has no git repo and that is fine (2026-10-15).
 - `APP_VERSION` in `Src/core/utils.py` must stay in sync with `version.txt` and the `version` in `pyproject.toml`.
 - The walkers prune `excluded_directories` in place (`dirnames[:] = ...`); without the prune the tool would recurse into its own output and the Leftover copies.
@@ -111,7 +123,7 @@ PyInstaller onefile per OS: Windows x64 (windows-latest), Linux x64 (ubuntu-late
 
 ## Settled decisions (don't re-litigate)
 
-- All extraction goes through the bundled binaries (7-Zip + fastgmad). No rarfile, py7zr, zipfile or tarfile: users have nothing to install (2026-10-15).
+- All extraction goes through the bundled binaries (7-Zip + fastgmad). No rarfile, py7zr, zipfile or tarfile: users have nothing to install (2026-10-15). Carve-out (2026-10-16): stdlib zipfile/tarfile unpack the tool's own downloaded tool bundles in `get_executable`, never user archives.
 - unittest, not pytest. ruff formats and lints; no CI lint step (2026-10-15).
 - One `build.yml` with three per-OS jobs, uv end to end, `uv.lock` committed (2026-10-15).
 - Release identity is frozen from `build_commit.txt` plus the exe mtime so bug reports name a real build, never a per-run random id (2026-10-15, ported from MetalSlugFontReborn).
@@ -124,14 +136,9 @@ PyInstaller onefile per OS: Windows x64 (windows-latest), Linux x64 (ubuntu-late
 
 ## Where to look things up
 
-Every third-party library this project uses is installed in `.venv/Lib/site-packages` (Windows), `.venv/lib/python3.15/site-packages` (Linux, macOS). The stdlib of the installed interpreter is there too. **This is mandatory and enforced:** never write an import or a call from memory. Before using any third-party API, open the package in the venv's site-packages and confirm the symbol, signature, and behavior actually exist there in the installed version. If it is not there, it does not exist for this project: do not add a dependency without asking.
-
-Pointers for this repo:
-
-- rich and PyInstaller APIs: inside the venv's site-packages.
+- Lookup locations are established and do not need re-deriving: tool and language docs live under `AI-Agents-Docs/` (one folder per tool), and every third-party library plus the stdlib is installed in `.venv/Lib/site-packages` (Windows), `.venv/lib/python3.15/site-packages` (Linux, macOS).
+- Before writing an import or a call, confirm the symbol, signature, and behavior exist in the installed version; if it is not there, it does not exist for this project: do not add a dependency without asking.
 - Packaging commands: `BUILD.md` and `.github/workflows/build.yml`. User-facing features: `README.md`.
-- Vendored docs: `AI-Agents-Docs/` under `Documents/Development`, one folder per tool.
-- CLI tooling: see Tooling below.
 
 ## Tooling (Windows, Git Bash)
 
