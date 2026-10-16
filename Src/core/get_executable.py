@@ -64,7 +64,6 @@ def _open_url(url, timeout):
 
 
 def _fetch_release_asset(repo, system_keyword):
-    """Return (url, algo, hash_hex, size) for the one OS asset of the nightly release."""
     url = f"https://api.github.com/repos/{repo}/releases/tags/nightly"
 
     for attempt in range(_DOWNLOAD_RETRIES):
@@ -131,7 +130,6 @@ def _fetch_release_asset(repo, system_keyword):
 def _download_verified(
     url, algo, expected_hash, expected_size, temp_path, progress_factory=None
 ):
-    """Stream url to temp_path, verifying size and checksum while bytes arrive."""
     progress_factory = progress_factory or (
         lambda description, total: nullcontext(lambda step: None)
     )
@@ -181,7 +179,6 @@ def _download_verified(
 
 
 def _extract_tool(archive_path, member_name, dest_path):
-    """Extract one regular file by basename from a zip or tar.gz, atomically."""
     temp_path = dest_path.with_name(dest_path.name + ".part")
 
     try:
@@ -233,7 +230,6 @@ def _extract_tool(archive_path, member_name, dest_path):
 
 
 def _runs_on_this_cpu(exe_path):
-    """Run the tool's help flag; a binary built for a newer CPU crashes or exits oddly."""
     try:
         result = run(
             [str(exe_path), "--help"],
@@ -250,7 +246,6 @@ def _runs_on_this_cpu(exe_path):
 
 
 def _recover_missing_tools(missing, bin_dir, progress_factory=None):
-    """Download missing tools from their nightly releases. Returns the paths recovered."""
     system = platform.system()
     system_keyword = _OS_KEYWORDS.get(system)
 
