@@ -2,7 +2,7 @@ import platform
 import sys
 import threading
 from datetime import datetime
-from os import cpu_count, rmdir, scandir
+from os import process_cpu_count, rmdir, scandir
 from pathlib import Path
 from subprocess import DEVNULL, PIPE, SubprocessError, run
 
@@ -48,7 +48,7 @@ build_date = _build_time().strftime("%Y-%m-%d (%A, %B %d)")
 
 
 def extraction_workers(max_workers, cores=None):
-    available = cores if cores is not None else (cpu_count() or 2)
+    available = cores if cores is not None else (process_cpu_count() or 2)
     return min(max_workers, max(1, available - 2), max(1, available * 3 // 4))
 
 
