@@ -10,3 +10,14 @@ Src/Bin/**/fastgmad.exe binary
 # Images are binary.
 *.png binary
 *.ico binary
+
+# Test fixtures and archives are binary.
+*.bin binary
+*.gma binary
+*.7z binary
+*.rar binary
+*.zip binary
+*.tar binary
+*.tar.gz binary
+*.tar.xz binary
+*.tar.bz2 binary
