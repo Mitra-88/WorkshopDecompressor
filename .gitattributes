@@ -1,0 +1,12 @@
+# All text files use LF in the repository and in every working tree.
+* text=auto eol=lf
+
+# Bundled executables: never diff, merge or line-ending convert them.
+Src/Bin/**/7zz binary
+Src/Bin/**/7zz.exe binary
+Src/Bin/**/fastgmad binary
+Src/Bin/**/fastgmad.exe binary
+
+# Images are binary.
+*.png binary
+*.ico binary
