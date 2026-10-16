@@ -266,7 +266,7 @@ class SystemInfoTests(unittest.TestCase):
 
 class VersionIdentityTests(unittest.TestCase):
     def test_app_version_names_a_real_build(self):
-        self.assertRegex(app_version, r"^v2\.8\.0 \((?:[0-9a-f]{7}|dev|release)\)$")
+        self.assertRegex(app_version, r"^v2\.9\.0 \((?:[0-9a-f]{7}|dev|release)\)$")
 
     def test_build_date_starts_with_a_date(self):
         self.assertRegex(build_date, r"^\d{4}-\d{2}-\d{2} \(")

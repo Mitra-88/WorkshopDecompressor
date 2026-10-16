@@ -42,7 +42,7 @@ def _build_time():
     return datetime.now()
 
 
-APP_VERSION = "2.8.0"
+APP_VERSION = "2.9.0"
 app_version = f"v{APP_VERSION} ({_git_commit()})"
 build_date = _build_time().strftime("%Y-%m-%d (%A, %B %d)")
 
