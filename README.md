@@ -84,11 +84,9 @@ Workshop Decompressor is a free, open-source command-line tool for Garry's Mod p
 
 - **Dual Addon Support** - Extracts both modern `.gma` addons and legacy `.bin` addons from SteamCMD, websites, or offline installs.
 - **Universal Archive Extraction** - Unpacks `.zip`, `.rar`, `.7z`, `.tar`, `.tar.gz`, `.tar.xz` and `.tar.bz2` with the included 7-Zip, so there is nothing to install.
-- **Smart Multithreading** - Extraction scales to your CPU with built-in headroom, so your desktop stays responsive.
+- **Smart Multithreading** - Extraction scales to your CPU with built-in headroom, so your PC stays responsive.
 - **Clean Console UI** - Numbered steps, live progress with file counts, per-file warnings, and a completion summary, powered by Rich.
 - **Cross-Platform** - One native executable per OS, with the extraction tools already inside: no setup, just run it.
-- **Self-Repairing Tools** - If a bundled binary is missing, it can download the right one from the project's nightly releases, verifying the published SHA-256 checksum before anything is unpacked.
-- **Update Notices** - Checks GitHub once per launch (in the background) and points to newer releases with a clickable link. It never downloads anything, and you can turn it off with the `WORKSHOP_DECOMPRESSOR_NO_UPDATE_CHECK` environment variable.
 - **Drop-in GWTool Replacement** - Point it at your addons and it does the rest, no manual steps.
 
 ## Coming from GWTool?
@@ -123,6 +121,7 @@ Both tools can extract Garry's Mod addons, but they take different approaches. G
 
 ## Good to Know
 
+- The very first launch of a newly downloaded or built version can sit on a blank window for several seconds (up to 15s with strict antivirus): the single executable unpacks itself while your antivirus inspects it. Every start after that takes about a second.
 - Legacy addons (`.bin`) sometimes make 7-Zip print a scary "data after the end of the payload data" message. That is normal: the files still extract fine, and the tool reports it as a warning instead of a failure.
 - The folder you run it from needs to be writable. The tool checks this up front and tells you if it isn't.
 - On Linux and macOS, run `chmod +x WorkshopDecompressor` once so the program is allowed to start. The bundled tools fix their own permissions automatically.
