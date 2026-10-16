@@ -11,11 +11,11 @@
 
 # Platforms
 
-| Operating System | Supported Versions                                       | Architecture | Tested   |
-|------------------|----------------------------------------------------------|--------------|----------|
-| Windows          | 11, 10 (1809 or later)                                   | 64-Bit       | ✅ Yeah  |
-| GNU/Linux        | Debian 13, Ubuntu 26.04, Fedora 44, Arch Linux, OpenSUSE | 64-Bit       | ✅ Yeah  |
-| macOS            | 27, 26, 15, 14, 13, 12                                   | ARM64        | Probably works? No Mac to test on, setting up a VM is a nightmare |
+| Operating System | Supported Versions                                 | Architecture | Tested |
+|------------------|----------------------------------------------------|--------------|--------|
+| Windows          | 11, 10 (1809 or higher)                            | 64-Bit       |   ✅   |
+| GNU/Linux        | Debian 13, Ubuntu 22.04, Fedora 44, Arch Linux     | 64-Bit       |   ✅   |
+| macOS            | 14.4 (Ventura) and higher                          | ARM64        |   ❌   |
 
 # Getting the Source Code
 
@@ -53,8 +53,7 @@ uv sync --frozen
 git rev-parse --short HEAD > Src\build_commit.txt
 ```
 ```sh
-uv run pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src\build_commit.txt;."  "Src/Core/cli.py"
-Copy-Item -Path "Src/Bin" -Destination "dist" -Recurse -Force
+uv run pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src\build_commit.txt;." --add-data "Src\Bin;Bin"  "Src/Core/cli.py"
 ```
 
 Without the `git rev-parse` line (for example from a source zip with no git repo) the build still works, the version string just shows `(release)` or `(dev)` instead of the commit.
@@ -69,8 +68,7 @@ uv sync --frozen
 git rev-parse --short HEAD > Src/build_commit.txt
 ```
 ```sh
-uv run pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:."  "Src/core/cli.py"
-cp -r Src/Bin dist/
+uv run pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:." --add-data "Src/Bin:Bin"  "Src/core/cli.py"
 ```
 
 # Running the Tests
