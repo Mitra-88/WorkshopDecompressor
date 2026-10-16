@@ -110,7 +110,7 @@ def render_spacer():
     console.print()
 
 
-def render_message(message, style="table.value"):
+def render_message(message, style="white"):
     console.print(Text(message, style=style))
 
 
@@ -386,7 +386,7 @@ def render_missing_tools_panel(missing):
 
 
 def render_directory_status(bin_dir):
-    display = str(bin_dir).replace("\\", "/")
+    display = bin_dir.as_posix()
 
     if not bin_dir.exists():
         render_message(f"The expected folder '{display}/' does not exist.", "muted")
