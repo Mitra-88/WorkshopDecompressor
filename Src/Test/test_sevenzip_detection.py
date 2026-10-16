@@ -23,7 +23,7 @@ from utils import (
 TEST_DIR = Path(__file__).resolve().parent
 SYSTEM = platform.system()
 SEVEN_ZIP = (
-    TEST_DIR.parent / "Bin" / SYSTEM / ("7z.exe" if SYSTEM == "Windows" else "7z")
+    TEST_DIR.parent / "Bin" / SYSTEM / ("7zz.exe" if SYSTEM == "Windows" else "7zz")
 )
 
 
@@ -36,6 +36,51 @@ class SevenZipDetectionTests(unittest.TestCase):
     def tearDown(self):
         os.chdir(self._old_cwd)
         shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_sevenzip_warning_code_one_reports_warning(self):
+        bin_copy = self.tmp / "Partial.bin"
+        bin_copy.write_bytes(b"anything")
+        (self.tmp / "Extracted-Bin").mkdir()
+
+        original = extract_addons.run_sevenzip_extraction
+
+        def fake_run(path, archive, output):
+            (output / "file.txt").write_text("x")
+            return True, 1, "some items had errors"
+
+        extract_addons.run_sevenzip_extraction = fake_run
+        try:
+            outcome = extract_addons.extract_bin_file(bin_copy, "unused")
+        finally:
+            extract_addons.run_sevenzip_extraction = original
+
+        self.assertTrue(outcome["success"])
+        self.assertEqual(outcome["returncode"], 1)
+        self.assertIn("7-Zip reported", outcome["warning"])
+        self.assertIn("incomplete", outcome["warning"])
+
+    def test_archive_warning_code_one_reports_warning(self):
+        archive_copy = self.tmp / "Partial.zip"
+        archive_copy.write_bytes(b"anything")
+        (self.tmp / "Leftover").mkdir()
+
+        original = extract_archives.run_sevenzip_extraction
+
+        def fake_run(path, archive, output):
+            (output / "file.txt").write_text("x")
+            return True, 1, "some items had errors"
+
+        extract_archives.run_sevenzip_extraction = fake_run
+        try:
+            outcome = extract_archives.extract_archive(
+                archive_copy, self.tmp / "Leftover", "unused"
+            )
+        finally:
+            extract_archives.run_sevenzip_extraction = original
+
+        self.assertTrue(outcome["success"])
+        self.assertIn("7-Zip reported", outcome["warning"])
+        self.assertTrue((self.tmp / "Leftover" / "Partial.zip").exists())
 
     def test_legacy_bin_with_trailing_data_reports_success(self):
         bin_copy = self.tmp / "Legacy-Addon.bin"
