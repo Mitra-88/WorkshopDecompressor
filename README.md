@@ -125,6 +125,7 @@ Both tools can extract Garry's Mod addons, but they take different approaches. G
 - Legacy addons (`.bin`) sometimes make 7-Zip print a scary "data after the end of the payload data" message. That is normal: the files still extract fine, and the tool reports it as a warning instead of a failure.
 - The folder you run it from needs to be writable. The tool checks this up front and tells you if it isn't.
 - On Linux and macOS, run `chmod +x WorkshopDecompressor` once so the program is allowed to start. The bundled tools fix their own permissions automatically.
+- Colors follow the `NO_COLOR` standard: set that environment variable to any non-empty value and the interface drops ANSI colors while keeping bold and underline styling.
 
 ## How to Use It
 
