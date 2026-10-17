@@ -12,6 +12,7 @@ The release that turns Workshop Decompressor into one self-contained executable.
 
 ### 🎵 What's New
 * **One file per OS:** Windows, Linux and macOS each get a single executable with 7-Zip and fastgmad inside, and no folder to keep next to it. Each artifact embeds only its own OS's pair of binaries.
+* **New 7-Zip build:** the bundled 7-Zip now comes from this project's own fork of 7-Zip, compiled with extra optimization flags, and it is the same build the tool self-repair downloads, so a repaired tool matches the one that shipped.
 * **Tool self-repair:** when a tool is missing or will not run, the program offers to fetch it from the project's nightly releases, verifies the published sha256 or sha512 digest and the byte size while streaming, extracts only the expected executable, and smoke-tests it before use. A failed download rolls back and leaves nothing behind.
 * **Update notices:** one background check per launch against the latest GitHub release. A newer version is announced once, with a link, and nothing is ever downloaded. Every failure is silent, and `WORKSHOP_DECOMPRESSOR_NO_UPDATE_CHECK` turns the check off.
 * **Console rebuilt:** numbered steps from `[1/6]` to `[6/6]`, live progress with file counts, per-file warnings, and a closing receipt naming the output folder, the elapsed time and the directories cleaned.
@@ -21,11 +22,16 @@ The release that turns Workshop Decompressor into one self-contained executable.
 ### ⚡ Performance
 * **800 MB in 0.68 seconds:** the volume fixture, 60 `.gma` files plus 15 legacy `.bin` files totaling 800 MB, extracted in 0.684 seconds on Windows 11 with 9 workers, using the released Windows executable. These are generated test addons; a real addon folder depends on content and disk speed.
 * **Memory stays flat:** peak working set was 38.3 MB during that batch and 37.3 MB during a three-file batch, with the 7-Zip child processes peaking at 9.3 MB. Extraction streams fixed-size chunks to disk from a worker pool sized from the available CPUs (cores minus two, capped at three quarters), so memory does not grow with the number of files.
+* **New fastgmad engine (0.5.0):** each worker reads its addon in 1 MiB positional reads through a reused buffer, and jobs are handed out without a shared lock, so memory follows the number of workers rather than the size of an addon. Its internal thread pool defaults to cores minus two, capped at three quarters of the cores and clamped to 32. The `.gma` files above go through this engine; the `.bin` files and archives go through 7-Zip.
 * **Smaller on disk:** the artifact is 14.04 MB for Windows, 15.27 MB for Linux and 14.38 MB for macOS, against the 25 MB footprint 2.8.0 listed.
 
 ### 🛠️ Fixes & Tweaks
 * **Legacy `.bin` files:** 7-Zip exits with code 2 on these ("data after the end of the payload data") even though the files extract. This is now reported per file and counted in the summary as a warning, and so is exit code 1, which previously passed silently.
 * **Tool recovery:** five failure paths found in review and closed. A missing download folder, an HTML response from a captive portal, a connection dropped mid-transfer, a blocked final move, and an unrecognized platform each ended in a crash or a misleading network message before.
+* **Unsafe entry names:** entries gmad.exe refuses, meaning path traversal, non-UTF-8 names, duplicate names and Windows device names such as `CON` or `NUL`, are written to `badnames/N.unk` by the new fastgmad build, the way gmad.exe writes them. 2.8.0 could drop that data.
+* **Format versions:** an addon that declares a format version above 3 is rejected, matching gmad.exe.
+* **Unwritable entries:** extraction continues past an entry it cannot write, keeping the stream aligned, and then exits with a non-zero code and a summary instead of abandoning the file.
+* **Input handling:** uppercase `.GMA` paths are accepted, and a failure names the entry or argument behind it.
 * **`.bin`-only folders:** a folder with no `.gma` files no longer crashes the run.
 * **Worker count:** the pool is sized from the CPUs this process may use rather than the total the machine reports, which matters under restricted CPU affinity.
 * **Compatibility:** menu options and the `Extracted-Addons` and `Leftover` folders work as in 2.8.0, so existing habits and shortcuts still apply.
