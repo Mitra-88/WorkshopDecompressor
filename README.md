@@ -122,8 +122,8 @@ You do not have to work that out yourself. Before an extraction starts, the prog
 
 ### Resource Footprint
 
-- **RAM Usage:** ~40MB
-- **Disk Space:** ~50MB
+- **RAM Usage:** about 38MB peak while extracting 800MB of addons in one batch, and about 37MB for three files, so the figure does not grow with the size of the job.
+- **Disk Space:** about 15MB for the program itself, one executable per OS, plus room for what you unpack: the extracted files and the `Leftover` copies kept beside them.
 
 ## Good to Know
 
