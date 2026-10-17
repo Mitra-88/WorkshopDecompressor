@@ -1,21 +1,27 @@
 ## **Workshop Decompressor v2.9.0 - "One File, No Setup"**
 **Release Date:** 2026-10-17
 
-The release that turns Workshop Decompressor into one self-contained executable. It is a large one: 33 commits since 2.8.0. The extraction tools now travel inside the program, the program can repair them if they go missing, and the console reports every step it takes.
+The release that turns Workshop Decompressor into one self-contained executable. It is a large one: 37 commits since 2.8.0. The extraction tools now travel inside the program, the program can repair them if they go missing, and the console reports every step it takes.
 
 ### ⚠️ Before You Upgrade
-* **CPU requirement:** the bundled 7-Zip and fastgmad builds are compiled for x86-64-v3, so they need AVX2 support: roughly an Intel CPU from 2013 or an AMD CPU from 2015 and newer, with a few entry-level chips from those years falling short. 2.8.0 bundled the official 7-Zip binary, so an older machine may notice this upgrade more than most. There is no older-CPU build of the bundled tools yet, which means supplying your own 7-Zip through the manual-path option.
+* **CPU requirement:** the bundled 7-Zip and fastgmad builds are compiled for x86-64-v3, so they need AVX2 support: roughly an Intel CPU from 2013 or an AMD CPU from 2015 and newer, with a few entry-level chips from those years falling short. Worth checking on an old machine, because the program now tests both tools before an extraction starts and says so plainly when your CPU cannot run them. There is no older-CPU build of the bundled tools, so the way around it is to point the program at your own 7-Zip through the manual-path option.
+* **Dropped:** `.tgz` files are no longer collected by Extract Archives. 2.8.0 read them as ordinary tar archives; the 2.9.0 archive list is `.zip`, `.rar`, `.7z`, `.tar`, `.tar.gz`, `.tar.xz` and `.tar.bz2`. Rename a `.tgz` to `.tar.gz` if you need it unpacked.
 * **Migration step:** replace the executable and delete any `Bin` folder you keep next to it. A `Bin` folder beside the program takes priority over the tools inside it, so a file left there with a matching name (`7zz`, `7zz.exe`, `fastgmad`, `fastgmad.exe`) is used instead of the bundled copy. The program tests whatever it finds before extracting, so a stale tool that cannot run is reported to you rather than used quietly.
 * **Renamed:** the shipped 7-Zip binary is `7zz` on Linux and macOS and `7zz.exe` on Windows, replacing `7z` and `7z.exe`. This only matters if you point the manual-path option at it.
 * **Changed behavior:** the version string is now `v2.9.0 (<commit>)` with the build date taken from the file, instead of an identifier regenerated on every start (2.8.0 used a random `uuid4` value). Bug reports now name the exact build. Build Info additionally reports the Python, PyInstaller, Rich and 7-Zip versions, and prints `N/A` for any version it cannot detect.
 * **Licenses:** the bundled 7-Zip builds ship with their own `License.txt`, `LICENSE-APACHE` and `LICENSE-MIT` files in `Src/Bin`, next to the binaries they cover.
+* **First launch after updating:** the new executable can sit on a blank window for several seconds, up to about 15 with a strict antivirus, while the one file unpacks itself and your antivirus inspects it. Later launches take about a second.
+* **Building from source:** `requirements.txt` is gone. Dependencies come from `pyproject.toml` and `uv.lock` through `uv sync`, and the project pins Python 3.15. BUILD.md has the commands.
 
 ### 🎵 What's New
 * **One file per OS:** Windows, Linux and macOS each get a single executable with 7-Zip and fastgmad inside, and no folder to keep next to it. Each artifact embeds only its own OS's pair of binaries.
+* **All archives through 7-Zip:** `.zip`, `.rar`, `.7z`, `.tar`, `.tar.gz`, `.tar.xz` and `.tar.bz2` now come out of the bundled 7-Zip, so the Python libraries 2.8.0 used for `.zip`, `.rar` and the `.tar` family are gone and nothing outside the program is involved. The compressed tar shapes are unpacked in two passes, which gives you their contents instead of an inner `.tar`.
 * **New 7-Zip build:** the bundled 7-Zip now comes from this project's own fork of 7-Zip, compiled with extra optimization flags, and it is the same build the tool self-repair downloads, so a repaired tool matches the one that shipped.
-* **Tool self-repair:** when a tool is missing or will not run, the program offers to fetch it from the project's nightly releases, verifies the published sha256 or sha512 digest and the byte size while streaming, extracts only the expected executable, and smoke-tests it before use. A failed download rolls back and leaves nothing behind.
+* **Tool self-repair:** when a tool is missing or will not run, the program offers to fetch it from the project's nightly releases, verifies the published sha256 or sha512 digest and the byte size while streaming, extracts only the expected executable, and smoke-tests it before use, showing a download bar with speed and elapsed time as it goes. A failed download rolls back and leaves nothing behind.
 * **Update notices:** one background check per launch against the latest GitHub release. A newer version is announced once, with a link, and nothing is ever downloaded. Every failure is silent, and `WORKSHOP_DECOMPRESSOR_NO_UPDATE_CHECK` turns the check off.
-* **Console rebuilt:** numbered steps from `[1/6]` to `[6/6]`, live progress with file counts, per-file warnings, and a closing receipt naming the output folder, the elapsed time and the directories cleaned.
+* **Console rebuilt:** numbered steps from `[1/6]` to `[6/6]`, live progress with file counts, and per-file warnings as they happen.
+* **Completion panel:** a run ends with a summary that says whether it finished cleanly, with warnings, or with failures, and gives the output folder, the elapsed time, the directories cleaned, the warning count and up to five failed file names with a count for the rest. 2.8.0 showed a failure count only.
+* **Help screen:** rewritten as a short guide with a getting-started section, one line for each menu option, and the note that you can drag a file into the window to enter its path.
 * **CPU check:** both tools are run once before an extraction starts. When this CPU cannot execute them, you get the reason and the choice to point the program at your own builds, instead of a folder of failed files with no explanation.
 * **Colors:** `NO_COLOR` is honored. Any non-empty value drops ANSI colors and keeps bold and underline styling.
 
@@ -26,20 +32,22 @@ The release that turns Workshop Decompressor into one self-contained executable.
 * **Smaller on disk:** the artifact is 14.04 MB for Windows, 15.27 MB for Linux and 14.38 MB for macOS, against the 25 MB footprint 2.8.0 listed.
 
 ### 🛠️ Fixes & Tweaks
-* **Legacy `.bin` files:** 7-Zip exits with code 2 on these ("data after the end of the payload data") even though the files extract. This is now reported per file and counted in the summary as a warning, and so is exit code 1, which previously passed silently.
+* **Legacy `.bin` files:** 7-Zip exits with code 2 on these ("data after the end of the payload data") even though the files extract. One rule now covers every file: files on disk mean success, and a non-zero exit becomes a warning in the summary rather than a failure. 2.8.0 failed any `.7z` with a non-zero code and ignored code 1 on `.bin`, so the same archive could be reported either way.
 * **Tool recovery:** five failure paths found in review and closed. A missing download folder, an HTML response from a captive portal, a connection dropped mid-transfer, a blocked final move, and an unrecognized platform each ended in a crash or a misleading network message before.
 * **Unsafe entry names:** entries gmad.exe refuses, meaning path traversal, non-UTF-8 names, duplicate names and Windows device names such as `CON` or `NUL`, are written to `badnames/N.unk` by the new fastgmad build, the way gmad.exe writes them. 2.8.0 could drop that data.
 * **Format versions:** an addon that declares a format version above 3 is rejected, matching gmad.exe.
 * **Unwritable entries:** extraction continues past an entry it cannot write, keeping the stream aligned, and then exits with a non-zero code and a summary instead of abandoning the file.
 * **Input handling:** uppercase `.GMA` paths are accepted, and a failure names the entry or argument behind it.
 * **`.bin`-only folders:** a folder with no `.gma` files no longer crashes the run.
+* **Tool table:** the expected location column shows a path relative to the program, such as `Bin/Windows/7zz.exe`, in place of a long absolute path.
+* **Error messages:** an unexpected failure now prints the error behind it, and the hint names the likely reasons instead of guessing: a folder that is not writable, a file that is open somewhere else.
 * **Worker count:** the pool is sized from the CPUs this process may use rather than the total the machine reports, which matters under restricted CPU affinity.
 * **Compatibility:** menu options and the `Extracted-Addons` and `Leftover` folders work as in 2.8.0, so existing habits and shortcuts still apply.
 
 ### 📚 Docs
-* **README:** requirements including the CPU requirement, a measured resource footprint, and steps that match the one-file build.
+* **README:** a header with build, download and licence badges, refreshed screenshots, requirements that include the CPU, a measured resource footprint, and steps that match the one-file build.
 * **BUILD.md:** per-OS build commands with the tool-version freeze step and the uv setup.
 * **AGENTS.md:** new. It holds the project's rationale, quirks and settled decisions in one place.
-* **Repository:** work happens on `master` only. The long-lived release branch was removed.
+* **Repository:** the per-OS workflows became one `build.yml` with a job per platform, `.gitattributes` pins line endings and marks the tool binaries and test fixtures as binary, and the long-lived release branch is gone, so work happens on `master` only.
 
 **Full Changelog**: [bc20d84...v2.9.0](https://github.com/Mitra-88/WorkshopDecompressor/compare/bc20d84256edb34a94dfd8df6712b0698c6748e4...v2.9.0)
