@@ -134,7 +134,7 @@ PyInstaller onefile per OS: Windows x64 (windows-latest), Linux x64 (ubuntu-late
 ## Project conventions
 
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) 1.0.0: `type(scope): description`, lowercase imperative mood, no trailing period. Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`. Breaking changes get `!` before the colon plus a `BREAKING CHANGE:` footer.
-- Work happens on `master`; `release` is a long-lived branch. Every push touching code, workflows or packaging builds all three artifacts; releases are cut from those artifacts.
+- Work happens on `master`. Every push touching code, workflows or packaging builds all three artifacts; releases are cut from those artifacts.
 
 ## Where to look things up
 
