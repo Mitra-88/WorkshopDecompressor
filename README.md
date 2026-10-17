@@ -64,7 +64,7 @@
 
 Workshop Decompressor is a free, open-source command-line tool for Garry's Mod players who need to unpack addon files. It handles both modern `.gma` addons and legacy `.bin` addons through the bundled fastgmad and 7-Zip binaries, and it doubles as a general archive extractor. Drop it into your addon folder, pick an option, done.
 
-![Workshop Decompressor running on a folder full of addons](Assets/Screenshot-2.png)
+![The Workshop Decompressor console window showing the main menu](Assets/Screenshot-2.png)
 
 </div>
 
