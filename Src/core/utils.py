@@ -48,7 +48,7 @@ def _package_version(name):
     try:
         return package_version(name)
     except PackageNotFoundError:
-        return "bundled"
+        return "N/A"
 
 
 def _tool_versions():
@@ -63,13 +63,14 @@ def _tool_versions():
     return (
         f"PyInstaller {_package_version('pyinstaller')}, "
         f"Rich {_package_version('rich')}, "
-        "7-Zip (bundled)"
+        "7-Zip N/A"
     )
 
 
 APP_VERSION = "2.9.0"
 app_version = f"v{APP_VERSION} ({_git_commit()})"
 build_date = _build_time().strftime("%Y-%m-%d (%A, %B %d)")
+python_version = platform.python_version()
 tool_versions = _tool_versions()
 
 

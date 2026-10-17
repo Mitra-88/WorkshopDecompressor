@@ -57,7 +57,7 @@ uv run python .github/scripts/freeze_tool_versions.py
 uv run pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src\build_commit.txt;." --add-data "Src\build_tools.txt;." --add-data "Src\Bin\Windows;Bin\Windows"  "Src/Core/cli.py"
 ```
 
-Without the `git rev-parse` line (for example from a source zip with no git repo) the build still works, the version string just shows `(release)` or `(dev)` instead of the commit. The same goes for the freeze script, which writes `Src/build_tools.txt` with the PyInstaller, Rich and bundled 7-Zip versions the Build Info screen reports. Skip it and the exe still runs, Build Info just shows `PyInstaller bundled, Rich bundled, 7-Zip (bundled)`, because a frozen build carries no package metadata to read those versions from.
+Without the `git rev-parse` line (for example from a source zip with no git repo) the build still works, the version string just shows `(release)` or `(dev)` instead of the commit. The same goes for the freeze script, which writes `Src/build_tools.txt` with the PyInstaller, Rich and bundled 7-Zip versions the Build Info screen reports. Skip it and the exe still runs, Build Info just shows `PyInstaller N/A, Rich N/A, 7-Zip N/A`, because a frozen build carries no package metadata to read those versions from. The Python version comes from the running interpreter, so it is there either way, and anything undetectable is reported as `N/A`.
 
 ## Linux and macOS
 

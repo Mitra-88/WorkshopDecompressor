@@ -31,12 +31,21 @@ class ToolVersionsTests(unittest.TestCase):
             mock.patch.object(sys, "frozen", True, create=True),
             mock.patch.object(sys, "_MEIPASS", tmp, create=True),
         ):
-            self.assertIn("7-Zip (bundled)", utils._tool_versions())
+            self.assertIn("7-Zip N/A", utils._tool_versions())
+
+    def test_missing_package_metadata_is_reported_as_unavailable(self):
+        with mock.patch.object(
+            utils, "package_version", side_effect=utils.PackageNotFoundError
+        ):
+            versions = utils._tool_versions()
+        self.assertIn("PyInstaller N/A", versions)
+        self.assertIn("Rich N/A", versions)
 
     def test_development_build_uses_installed_versions(self):
+        self.assertRegex(utils.python_version, r"^\d+\.\d+")
         versions = utils._tool_versions()
         self.assertIn("PyInstaller ", versions)
-        self.assertIn("7-Zip (bundled)", versions)
+        self.assertIn("7-Zip N/A", versions)
 
 
 if __name__ == "__main__":

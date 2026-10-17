@@ -6,7 +6,13 @@ from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
 from update_check import start as start_update_check
 from update_check import take_notice
-from utils import app_version, build_date, get_system_info, tool_versions
+from utils import (
+    app_version,
+    build_date,
+    get_system_info,
+    python_version,
+    tool_versions,
+)
 
 logger = logging.getLogger("workshop.cli")
 
@@ -24,6 +30,7 @@ def _build_info():
         "Program": f"Workshop Decompressor {app_version}",
         "Build Date": build_date,
         "Operating System": get_system_info(),
+        "Python": python_version,
         "Dependencies": tool_versions,
     }
 
