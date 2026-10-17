@@ -51,12 +51,13 @@ cd WorkshopDecompressor
 uv python install 3.15
 uv sync --frozen
 git rev-parse --short HEAD > Src\build_commit.txt
+uv run python .github/scripts/freeze_tool_versions.py
 ```
 ```sh
-uv run pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src\build_commit.txt;." --add-data "Src\Bin\Windows;Bin\Windows"  "Src/Core/cli.py"
+uv run pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src\build_commit.txt;." --add-data "Src\build_tools.txt;." --add-data "Src\Bin\Windows;Bin\Windows"  "Src/Core/cli.py"
 ```
 
-Without the `git rev-parse` line (for example from a source zip with no git repo) the build still works, the version string just shows `(release)` or `(dev)` instead of the commit.
+Without the `git rev-parse` line (for example from a source zip with no git repo) the build still works, the version string just shows `(release)` or `(dev)` instead of the commit. The same goes for the freeze script, which writes `Src/build_tools.txt` with the PyInstaller, Rich and bundled 7-Zip versions the Build Info screen reports. Skip it and the exe still runs, Build Info just shows `PyInstaller bundled, Rich bundled, 7-Zip (bundled)`, because a frozen build carries no package metadata to read those versions from.
 
 ## Linux and macOS
 
@@ -66,9 +67,10 @@ cd WorkshopDecompressor
 uv python install 3.15
 uv sync --frozen
 git rev-parse --short HEAD > Src/build_commit.txt
+uv run python .github/scripts/freeze_tool_versions.py
 ```
 ```sh
-uv run pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:." --add-data "Src/Bin/Linux:Bin/Linux"  "Src/core/cli.py"
+uv run pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:." --add-data "Src/build_tools.txt:." --add-data "Src/Bin/Linux:Bin/Linux"  "Src/core/cli.py"
 ```
 
 On macOS use `Src/Bin/Darwin:Bin/Darwin` as the last `--add-data` instead.

@@ -2,6 +2,8 @@ import platform
 import sys
 import threading
 from datetime import datetime
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as package_version
 from os import process_cpu_count, rmdir, scandir
 from pathlib import Path
 from subprocess import DEVNULL, PIPE, SubprocessError, run
@@ -42,9 +44,33 @@ def _build_time():
     return datetime.now()
 
 
+def _package_version(name):
+    try:
+        return package_version(name)
+    except PackageNotFoundError:
+        return "bundled"
+
+
+def _tool_versions():
+    if getattr(sys, "frozen", False):
+        try:
+            bundled_file = Path(getattr(sys, "_MEIPASS", ".")) / "build_tools.txt"
+            bundled = bundled_file.read_text(encoding="utf-8").strip()
+        except OSError, ValueError:
+            bundled = ""
+        if bundled:
+            return ", ".join(bundled.splitlines())
+    return (
+        f"PyInstaller {_package_version('pyinstaller')}, "
+        f"Rich {_package_version('rich')}, "
+        "7-Zip (bundled)"
+    )
+
+
 APP_VERSION = "2.9.0"
 app_version = f"v{APP_VERSION} ({_git_commit()})"
 build_date = _build_time().strftime("%Y-%m-%d (%A, %B %d)")
+tool_versions = _tool_versions()
 
 
 def extraction_workers(max_workers, cores=None):

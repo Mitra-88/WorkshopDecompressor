@@ -1,13 +1,12 @@
 import logging
 import sys
-from importlib.metadata import PackageNotFoundError, version
 
 import ui
 from extract_addons import main as extract_addons
 from extract_archives import main as extract_archives
 from update_check import start as start_update_check
 from update_check import take_notice
-from utils import app_version, build_date, get_system_info
+from utils import app_version, build_date, get_system_info, tool_versions
 
 logger = logging.getLogger("workshop.cli")
 
@@ -20,23 +19,12 @@ MENU_ITEMS = (
 )
 
 
-def _dependency_version(name):
-    try:
-        return version(name)
-    except PackageNotFoundError:
-        return "bundled"
-
-
 def _build_info():
     return {
         "Program": f"Workshop Decompressor {app_version}",
         "Build Date": build_date,
         "Operating System": get_system_info(),
-        "Dependencies": (
-            f"PyInstaller {_dependency_version('pyinstaller')}, "
-            f"Rich {_dependency_version('rich')}, "
-            "7-Zip (bundled)"
-        ),
+        "Dependencies": tool_versions,
     }
 
 

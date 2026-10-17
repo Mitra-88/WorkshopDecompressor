@@ -12,6 +12,7 @@ on:
       - master
     paths:
       - '.github/workflows/**'
+      - '.github/scripts/**'
       - 'Src/**'
       - 'pyproject.toml'
       - 'uv.lock'
@@ -62,8 +63,11 @@ jobs:
         shell: bash
         run: git rev-parse --short HEAD > Src/build_commit.txt
 
+      - name: Freeze tool versions
+        run: python .github/scripts/freeze_tool_versions.py
+
       - name: Build with PyInstaller
-        run: pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/build_commit.txt;." --add-data "Src/Bin/Windows;Bin/Windows"  "Src/Core/cli.py"
+        run: pyinstaller --noconfirm --onefile --console --icon "Assets/Icon/WorkshopDecompressor.ico" --name "WorkshopDecompressor" --clean --optimize "2" --version-file "version.txt" --add-data "Src/build_commit.txt;." --add-data "Src/build_tools.txt;." --add-data "Src/Bin/Windows;Bin/Windows"  "Src/Core/cli.py"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -113,9 +117,12 @@ jobs:
       - name: Write build commit
         run: git rev-parse --short HEAD > Src/build_commit.txt
 
+      - name: Freeze tool versions
+        run: python .github/scripts/freeze_tool_versions.py
+
       - name: Build with PyInstaller
         run: |
-          pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:." --add-data "Src/Bin/Linux:Bin/Linux"  "Src/core/cli.py"
+          pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:." --add-data "Src/build_tools.txt:." --add-data "Src/Bin/Linux:Bin/Linux"  "Src/core/cli.py"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -166,9 +173,12 @@ jobs:
       - name: Write build commit
         run: git rev-parse --short HEAD > Src/build_commit.txt
 
+      - name: Freeze tool versions
+        run: python .github/scripts/freeze_tool_versions.py
+
       - name: Build with PyInstaller
         run: |
-          pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:." --add-data "Src/Bin/Darwin:Bin/Darwin"  "Src/core/cli.py"
+          pyinstaller --noconfirm --onefile --console --strip --name "WorkshopDecompressor" --clean --optimize "2" --add-data "Src/build_commit.txt:." --add-data "Src/build_tools.txt:." --add-data "Src/Bin/Darwin:Bin/Darwin"  "Src/core/cli.py"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
