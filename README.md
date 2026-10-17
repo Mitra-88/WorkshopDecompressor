@@ -114,6 +114,12 @@ Both tools can extract Garry's Mod addons, but they take different approaches. G
 
 > **macOS:** Built for Apple Silicon. I don't own a Mac to verify, but it should work.
 
+#### CPU
+
+The bundled 7-Zip and fastgmad binaries are built for **x86-64-v3** CPUs, which means they need AVX2 support: roughly an Intel CPU from 2013 or an AMD CPU from 2015 and newer. A few entry-level chips from those years do not have it. The macOS build is ARM64, so this does not apply there.
+
+You do not have to work that out yourself. Before an extraction starts, the program tests both tools, and if your CPU cannot run them it says so in plain words and lets you point it at your own 7-Zip or fastgmad build, instead of failing file after file with no explanation.
+
 ### Resource Footprint
 
 - **RAM Usage:** ~40MB

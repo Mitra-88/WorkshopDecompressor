@@ -385,6 +385,39 @@ def render_missing_tools_panel(missing):
     )
 
 
+def render_cpu_requirement_panel(reasons):
+    text = Text()
+    text.append("These tools were found, but this CPU cannot run them.\n\n")
+    text.append(
+        "The bundled builds are made for x86-64-v3 CPUs, which need AVX2. That means "
+        "roughly an Intel CPU from 2013 or an AMD CPU from 2015 and newer.\n\n",
+        style="muted",
+    )
+
+    for name, reason in reasons.items():
+        line = Text()
+        line.append(f"  {name}: ", style="table.label")
+        line.append(reason, style="table.value")
+        text.append_text(line)
+        text.append("\n")
+
+    text.append("\nNothing can be extracted while a tool cannot run.\n")
+    text.append(
+        "In the next step you can point the tool at your own builds, as long as "
+        "they run on this CPU.\n"
+    )
+    text.append("If you have nothing to point at, press Ctrl+C to stop.", style="muted")
+
+    console.print(
+        Panel(
+            text,
+            title=_panel_title("CPU REQUIREMENT", style="warning"),
+            border_style="warning",
+            expand=False,
+        )
+    )
+
+
 def render_directory_status(bin_dir):
     display = bin_dir.as_posix()
 

@@ -10,6 +10,7 @@ import unittest
 import urllib.error
 import zipfile
 from pathlib import Path
+from subprocess import SubprocessError
 from unittest import mock
 
 CORE_DIR = Path(__file__).resolve().parent.parent / "core"
@@ -229,7 +230,7 @@ class ToolRecoveryTests(unittest.TestCase):
 
         original_fetch = get_executable._fetch_release_asset
         original_download = get_executable._download_verified
-        original_smoke = get_executable._runs_on_this_cpu
+        original_smoke = get_executable._startup_failure
 
         get_executable._fetch_release_asset = lambda repo, keyword: (
             "https://example/bundle.zip",
@@ -245,13 +246,13 @@ class ToolRecoveryTests(unittest.TestCase):
             return True
 
         get_executable._download_verified = fake_download
-        get_executable._runs_on_this_cpu = lambda exe: True
+        get_executable._startup_failure = lambda exe: None
         try:
             recovered = get_executable._recover_missing_tools(["fastgmad"], self.tmp)
         finally:
             get_executable._fetch_release_asset = original_fetch
             get_executable._download_verified = original_download
-            get_executable._runs_on_this_cpu = original_smoke
+            get_executable._startup_failure = original_smoke
 
         self.assertEqual(recovered, {"fastgmad": str(self.tmp / "fastgmad.exe")})
         self.assertTrue((self.tmp / "fastgmad.exe").exists())
@@ -262,7 +263,7 @@ class ToolRecoveryTests(unittest.TestCase):
 
         original_fetch = get_executable._fetch_release_asset
         original_download = get_executable._download_verified
-        original_smoke = get_executable._runs_on_this_cpu
+        original_smoke = get_executable._startup_failure
 
         get_executable._fetch_release_asset = lambda repo, keyword: (
             "https://example/bundle.zip",
@@ -275,13 +276,13 @@ class ToolRecoveryTests(unittest.TestCase):
                 shutil.copyfile(archive, temp_path) or True
             )
         )
-        get_executable._runs_on_this_cpu = lambda exe: False
+        get_executable._startup_failure = lambda exe: "it stopped right away"
         try:
             recovered = get_executable._recover_missing_tools(["fastgmad"], self.tmp)
         finally:
             get_executable._fetch_release_asset = original_fetch
             get_executable._download_verified = original_download
-            get_executable._runs_on_this_cpu = original_smoke
+            get_executable._startup_failure = original_smoke
 
         self.assertEqual(recovered, {})
         self.assertFalse((self.tmp / "fastgmad.exe").exists())
@@ -315,7 +316,7 @@ class ToolRecoveryTests(unittest.TestCase):
 
         original_fetch = get_executable._fetch_release_asset
         original_download = get_executable._download_verified
-        original_smoke = get_executable._runs_on_this_cpu
+        original_smoke = get_executable._startup_failure
 
         get_executable._fetch_release_asset = lambda repo, keyword: (
             "https://example/bundle.zip",
@@ -331,13 +332,13 @@ class ToolRecoveryTests(unittest.TestCase):
             return True
 
         get_executable._download_verified = fake_download
-        get_executable._runs_on_this_cpu = lambda exe: True
+        get_executable._startup_failure = lambda exe: None
         try:
             recovered = get_executable._recover_missing_tools(["fastgmad"], bin_dir)
         finally:
             get_executable._fetch_release_asset = original_fetch
             get_executable._download_verified = original_download
-            get_executable._runs_on_this_cpu = original_smoke
+            get_executable._startup_failure = original_smoke
 
         self.assertEqual(recovered, {"fastgmad": str(bin_dir / "fastgmad.exe")})
 
@@ -419,6 +420,91 @@ class ToolResolutionTests(unittest.TestCase):
             self.skipTest("running inside a PyInstaller bundle")
 
         self.assertIsNone(get_executable._bundled_bin_dir(platform.system()))
+
+
+class StartupCheckTests(unittest.TestCase):
+    def _completed(self, returncode, stdout="", stderr=""):
+        return mock.Mock(returncode=returncode, stdout=stdout, stderr=stderr)
+
+    def test_zero_exit_passes(self):
+        with mock.patch.object(get_executable, "run", return_value=self._completed(0)):
+            self.assertIsNone(get_executable._startup_failure("7zz"))
+
+    def test_output_passes_even_with_error_code(self):
+        with mock.patch.object(
+            get_executable, "run", return_value=self._completed(2, stdout="FastGMAD")
+        ):
+            self.assertIsNone(get_executable._startup_failure("fastgmad"))
+
+    def test_silent_crash_reports_the_exit_code(self):
+        with mock.patch.object(
+            get_executable, "run", return_value=self._completed(-1073741795)
+        ):
+            self.assertEqual(
+                get_executable._startup_failure("7zz"),
+                "it stopped right away with exit code -1073741795",
+            )
+
+    def test_unstartable_binary_reports_its_own_reason(self):
+        with mock.patch.object(get_executable, "run", side_effect=PermissionError):
+            self.assertEqual(
+                get_executable._startup_failure("7zz"), "it could not be started"
+            )
+
+    def test_timeout_reports_its_own_reason(self):
+        with mock.patch.object(get_executable, "run", side_effect=SubprocessError):
+            self.assertEqual(
+                get_executable._startup_failure("7zz"),
+                "it did not finish starting up",
+            )
+
+
+class ToolSetupTests(unittest.TestCase):
+    located = (
+        {"7z": "found/7zz"},
+        [],
+        [{"name": "7z", "path": "Bin/7zz", "found": True}],
+        Path("Bin"),
+    )
+
+    def _run_setup(self, startup_failure):
+        with (
+            mock.patch.object(
+                get_executable, "locate_executables", return_value=self.located
+            ),
+            mock.patch.object(get_executable, "prepare_executables"),
+            mock.patch.object(
+                get_executable, "_startup_failure", return_value=startup_failure
+            ),
+            mock.patch.object(get_executable.ui, "render_rule"),
+            mock.patch.object(get_executable.ui, "render_tool_status"),
+            mock.patch.object(get_executable.ui, "render_spacer"),
+            mock.patch.object(get_executable.ui, "render_message"),
+            mock.patch.object(
+                get_executable.ui, "render_cpu_requirement_panel"
+            ) as self.panel,
+            mock.patch.object(
+                get_executable.ui,
+                "prompt_absolute_paths",
+                return_value={"7z": "mine/7zz"},
+            ) as self.prompt,
+        ):
+            return get_executable.ensure_executable_paths()
+
+    def test_runnable_tool_skips_the_prompt(self):
+        found = self._run_setup(None)
+
+        self.assertEqual(found, {"7z": "found/7zz"})
+        self.panel.assert_not_called()
+        self.prompt.assert_not_called()
+
+    def test_unusable_tool_is_asked_for_again_by_path(self):
+        reason = "it stopped right away with exit code -4"
+        found = self._run_setup(reason)
+
+        self.panel.assert_called_once_with({"7z": reason})
+        self.prompt.assert_called_once_with(["7z"])
+        self.assertEqual(found, {"7z": "mine/7zz"})
 
 
 if __name__ == "__main__":

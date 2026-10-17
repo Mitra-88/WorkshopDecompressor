@@ -229,7 +229,7 @@ def _extract_tool(archive_path, member_name, dest_path):
     return True
 
 
-def _runs_on_this_cpu(exe_path):
+def _startup_failure(exe_path):
     try:
         result = run(
             [str(exe_path), "--help"],
@@ -237,12 +237,15 @@ def _runs_on_this_cpu(exe_path):
             timeout=_SMOKE_TEST_TIMEOUT,
             check=False,
         )
-    except OSError, SubprocessError:
-        return False
+    except SubprocessError:
+        return "it did not finish starting up"
+    except OSError:
+        return "it could not be started"
 
-    return result.returncode == 0 or bool(
-        result.stdout.strip() or result.stderr.strip()
-    )
+    if result.returncode == 0 or result.stdout.strip() or result.stderr.strip():
+        return None
+
+    return f"it stopped right away with exit code {result.returncode}"
 
 
 def _recover_missing_tools(missing, bin_dir, progress_factory=None):
@@ -301,8 +304,6 @@ def _recover_missing_tools(missing, bin_dir, progress_factory=None):
         finally:
             temp_archive.unlink(missing_ok=True)
 
-        logger.info("Checking that %s runs on this CPU...", filename)
-
         tool_path = bin_dir / filename
 
         try:
@@ -312,7 +313,7 @@ def _recover_missing_tools(missing, bin_dir, progress_factory=None):
 
         logger.info("Checking that %s runs on this CPU...", filename)
 
-        if not _runs_on_this_cpu(tool_path):
+        if _startup_failure(tool_path):
             logger.warning(
                 "%s was downloaded but would not run on this CPU and was removed. "
                 "It may need a newer processor (AVX2). Use the manual path option instead.",
@@ -402,43 +403,60 @@ def locate_executables():
     return found, missing, rows, bin_dir
 
 
+def _unusable_on_this_cpu(found):
+    reasons = {}
+
+    for name, path in found.items():
+        reason = _startup_failure(path)
+
+        if reason is not None:
+            reasons[name] = reason
+
+    return reasons
+
+
 def ensure_executable_paths():
     found, missing, rows, bin_dir = locate_executables()
 
     ui.render_rule("Tool Setup")
     ui.render_tool_status(rows)
 
-    if not missing:
+    if missing:
+        ui.render_missing_tools_panel(missing)
+        ui.render_directory_status(bin_dir)
+        ui.render_spacer()
+
+        if ui.confirm_continue(
+            "Download tools",
+            (
+                "The missing tools can be downloaded from the project's nightly releases:",
+                f"Missing: {', '.join(missing)}",
+            ),
+        ):
+            downloaded = _recover_missing_tools(missing, bin_dir, ui.download_progress)
+
+            if downloaded:
+                found.update(downloaded)
+                missing = [name for name in missing if name not in downloaded]
+
+    prepare_executables(found)
+
+    unusable = _unusable_on_this_cpu(found)
+
+    if unusable:
+        ui.render_cpu_requirement_panel(unusable)
+        missing = missing + [name for name in unusable if name not in missing]
+        found = {name: path for name, path in found.items() if name not in unusable}
+
+    if missing:
+        found.update(ui.prompt_absolute_paths(missing))
+        prepare_executables(found)
+    else:
         ui.render_spacer()
         ui.render_message(
             "Success! All required tools were found automatically.",
             "success",
         )
         ui.render_spacer()
-        prepare_executables(found)
-        return found
-
-    ui.render_missing_tools_panel(missing)
-    ui.render_directory_status(bin_dir)
-    ui.render_spacer()
-
-    if ui.confirm_continue(
-        "Download tools",
-        (
-            "The missing tools can be downloaded from the project's nightly releases:",
-            f"Missing: {', '.join(missing)}",
-        ),
-    ):
-        downloaded = _recover_missing_tools(missing, bin_dir, ui.download_progress)
-
-        if downloaded:
-            found.update(downloaded)
-            missing = [name for name in missing if name not in downloaded]
-
-    if missing:
-        manual_paths = ui.prompt_absolute_paths(missing)
-        found.update(manual_paths)
-
-    prepare_executables(found)
 
     return found
