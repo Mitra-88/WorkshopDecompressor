@@ -42,4 +42,4 @@ The release that turns Workshop Decompressor into one self-contained executable.
 * **AGENTS.md:** new. It holds the project's rationale, quirks and settled decisions in one place.
 * **Repository:** work happens on `master` only. The long-lived release branch was removed.
 
-**Full Changelog**: [bc20d84...973f1d9](https://github.com/Mitra-88/WorkshopDecompressor/compare/bc20d84256edb34a94dfd8df6712b0698c6748e4...973f1d9)
+**Full Changelog**: [bc20d84...v2.9.0](https://github.com/Mitra-88/WorkshopDecompressor/compare/bc20d84256edb34a94dfd8df6712b0698c6748e4...v2.9.0)
