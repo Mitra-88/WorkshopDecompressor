@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="Assets/Icon/WorkshopDecompressor-README.png" alt="Workshop Decompressor icon" width="160" height="160">
+<img src="Assets/Icon/WorkshopDecompressor-README.webp" alt="Workshop Decompressor icon" width="160" height="160">
 
 # Workshop Decompressor
 
@@ -64,7 +64,7 @@
 
 Workshop Decompressor is a free, open-source command-line tool for Garry's Mod players who need to unpack addon files. It handles both modern `.gma` addons and legacy `.bin` addons through the bundled fastgmad and 7-Zip binaries, and it doubles as a general archive extractor. Drop it into your addon folder, pick an option, done.
 
-![The Workshop Decompressor console window showing the main menu](Assets/Screenshot-2.png)
+![The Workshop Decompressor console window showing the main menu](Assets/preview.png)
 
 </div>
 
@@ -132,7 +132,7 @@ Both tools can extract Garry's Mod addons, but they take different approaches. G
 1. Download the program for your OS from the [latest release page](https://github.com/Mitra-88/WorkshopDecompressor/releases/latest).
 2. Put it in the folder with your addons. If you use SteamCMD, that is usually `steamapps/workshop/content/4000`.
 
-<img src="Assets/Screenshot-1.png" alt="Program placed in the SteamCMD addon folder" width="560">
+<img src="Assets/steamcmd-preview.png" alt="Program placed in the SteamCMD addon folder" width="900">
 
 3. Run it and pick an option: `[1]` extracts addons, `[2]` extracts archives, `[3]` shows help.
 
